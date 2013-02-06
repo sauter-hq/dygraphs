@@ -956,19 +956,20 @@ Dygraph.prototype.createInterface_ = function() {
 
   var dygraph = this;
 
-  // Don't recreate and register the handlers on subsequent calls.
+  this.mouseMoveHandler_ = function(e) {
+    dygraph.mouseMove_(e);
+  };
+
+  this.mouseOutHandler_ = function(e) {
+    dygraph.mouseOut_(e);
+  };
+
+  this.addEvent(this.mouseEventElement_, 'mousemove', this.mouseMoveHandler_);
+  this.addEvent(this.mouseEventElement_, 'mouseout', this.mouseOutHandler_);
+
+  // Don't recreate and register the resize handler on subsequent calls.
   // This happens when the graph is resized.
-  if (!this.mouseMoveHandler_) {
-    this.mouseMoveHandler_ = function(e) {
-      dygraph.mouseMove_(e);
-    };
-    this.addEvent(this.mouseEventElement_, 'mousemove', this.mouseMoveHandler_);
-
-    this.mouseOutHandler_ = function(e) {
-      dygraph.mouseOut_(e);
-    };
-    this.addEvent(this.mouseEventElement_, 'mouseout', this.mouseOutHandler_);
-
+  if (!this.resizeHandler_) {
     this.resizeHandler_ = function(e) {
       dygraph.resize();
     };
@@ -992,10 +993,13 @@ Dygraph.prototype.destroy = function() {
     }
   };
 
-  for (var idx = 0; idx < this.registeredEvents_.length; idx++) {
-    var reg = this.registeredEvents_[idx];
-    Dygraph.removeEvent(reg.elem, reg.type, reg.fn);
+  if (this.registeredEvents_) {
+    for (var idx = 0; idx < this.registeredEvents_.length; idx++) {
+      var reg = this.registeredEvents_[idx];
+      Dygraph.removeEvent(reg.elem, reg.type, reg.fn);
+    }
   }
+
   this.registeredEvents_ = [];
 
   // remove mouse event handlers (This may not be necessary anymore)
@@ -1275,6 +1279,12 @@ Dygraph.prototype.createDragInterface_ = function() {
     if (!interactionModel.hasOwnProperty(eventName)) continue;
     this.addEvent(this.mouseEventElement_, eventName,
         bindHandler(interactionModel[eventName]));
+  }
+
+  // unregister the handler on subsequent calls.
+  // This happens when the graph is resized.
+  if (this.mouseUpHandler_) {
+    Dygraph.removeEvent(document, 'mouseup', this.mouseUpHandler_);
   }
 
   // If the user releases the mouse button during a drag, but not over the
@@ -2514,6 +2524,10 @@ Dygraph.prototype.axisPropertiesForSeries = function(series) {
  * This fills in the valueRange and ticks fields in each entry of this.axes_.
  */
 Dygraph.prototype.computeYAxisRanges_ = function(extremes) {
+  
+  var isNullUndefinedOrNaN = function(num) {
+    return isNaN(parseFloat(num));
+  };
   var series;
   var numAxes = this.attributes_.numAxes();
 
@@ -2586,7 +2600,10 @@ Dygraph.prototype.computeYAxisRanges_ = function(extremes) {
       axis.computedValueRange = [axis.valueWindow[0], axis.valueWindow[1]];
     } else if (axis.valueRange) {
       // This is a user-set value range for this axis.
-      axis.computedValueRange = [axis.valueRange[0], axis.valueRange[1]];
+      axis.computedValueRange = [
+         isNullUndefinedOrNaN(axis.valueRange[0]) ? axis.extremeRange[0] : axis.valueRange[0],
+         isNullUndefinedOrNaN(axis.valueRange[1]) ? axis.extremeRange[1] : axis.valueRange[1]
+      ];
     } else {
       axis.computedValueRange = axis.extremeRange;
     }
