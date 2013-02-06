@@ -251,7 +251,7 @@ DygraphLayout.prototype._evaluateLineCharts = function() {
       // Range from 0-1 where 0 represents left and 1 represents right.
       var xNormal = (xValue - this.minxval) * this.xscale;
       // Range from 0-1 where 0 represents top and 1 represents bottom
-      var yNormal = DygraphLayout._calcYNormal(axis, yValueParsed);
+      var yNormal = DygraphLayout._calcYNormal(axis, yValueParsed, logscale);
       
       // TODO(danvk): drop the point in this case, don't null it.
       // The nulls create complexity in DygraphCanvasRenderer._drawSeries.
