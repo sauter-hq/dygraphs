@@ -242,9 +242,9 @@ DygraphLayout.prototype._evaluateLineCharts = function() {
       var yValue = item[1];
       var yValueParsed;
       if (this.attr_("customData")){
-    	  yValueParsed = this.attr_("customData").getYFloatValue(item[1]);
+        yValueParsed = this.attr_("customData").getYFloatValue(item[1]);
       } else{
-    	  yValueParsed = yValue = DygraphLayout.parseFloat_(item[1]);
+        yValueParsed = yValue = DygraphLayout.parseFloat_(item[1]);
       }
       //XXX: END
       
@@ -267,7 +267,7 @@ DygraphLayout.prototype._evaluateLineCharts = function() {
       };
       //XXX: SAUTER: add support for custom datatypes
       if (this.attr_("customData")){
-    	  this.attr_("customData").onPointCreated(seriesPoints[j], yValue, this.dygraph_);
+        this.attr_("customData").onPointCreated(seriesPoints[j], yValue, this.dygraph_);
       }
       //XXX: END
     }

@@ -2111,7 +2111,7 @@ Dygraph.prototype.extremeValues_ = function(series) {
   
   //XXX: SAUTER: add support for custom datatypes
   if (this.attr_("customData")){
-	  return this.attr_("customData").getExtremeYValues(series);
+      return this.attr_("customData").getExtremeYValues(series);
   } 
   else
   //XXX: SAUTER END
@@ -2189,11 +2189,11 @@ Dygraph.prototype.predraw_ = function() {
     
     //XXX: SAUTER: add support for custom datatypes
     if (this.attr_("customData")){
-    	series = this.attr_("customData").rollingAverage(series, this.rollPeriod_);
+      series = this.attr_("customData").rollingAverage(series, this.rollPeriod_);
     }
     //XXX: SAUTER END
     else{
-    	series = this.rollingAverage(series, this.rollPeriod_);
+      series = this.rollingAverage(series, this.rollPeriod_);
     }
     this.rolledSeries_.push(series);
   }
@@ -2275,7 +2275,7 @@ Dygraph.prototype.gatherDatasets_ = function(rolledSeries, dateWindow) {
 
 	//XXX: SAUTER: add support for custom datatypes
     if (this.attr_("customData")){
-    	series = this.attr_("customData").formatSeries(series);
+      series = this.attr_("customData").formatSeries(series);
     }
     else 
     //XXX: SAUTER END 
