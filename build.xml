@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- 
+     INSTRUCTIONS:
+     ==============
+     In order to automatically copy the dygraph files, please ensure that visionView is located in ../visionView relative to this file.
+    -->
+<project name="dygraphsForMwV" default="provideDygraphsForMwV">
+
+  <property name="workspace" value=".."/>
+  <property name="visionView" value="${workspace}/visionView"/>
+  <property name="dygraphSource" value="${workspace}/dygraphs"/>
+  <property name="dygraphDestination" value="${workspace}/visionView/WebContent/resources/js/dygraphs"/>
+
+<!-- Target to copy dygraph files to visionView -->
+  <target name="provideDygraphsForMwV" description="Copy paste the needed dygraph files to visionView">
+    <echo message="*****--- Updating dygraph files ${line.separator}"/>
+    <echo message="*****--- Removing old files... ${line.separator}"/>
+    <delete includeEmptyDirs="true">
+      <fileset dir="${dygraphDestination}" includes="**/*"/>
+    </delete>
+    <echo message="*****--- Copying new files... ${line.separator}"/>
+    <copy todir="${dygraphDestination}" overwrite="true" verbose="true" flatten="true">
+      <resources>    		
+        <file file="${dygraphSource}/dashed-canvas.js"/>
+        <file file="${dygraphSource}/dygraph.js"/>
+        <file file="${dygraphSource}/dygraph-canvas.js"/>
+        <file file="${dygraphSource}/dygraph-dev.js"/>
+        <file file="${dygraphSource}/dygraph-gviz.js"/>
+        <file file="${dygraphSource}/dygraph-interaction-model.js"/>
+        <file file="${dygraphSource}/dygraph-layout.js"/>
+        <file file="${dygraphSource}/dygraph-options.js"/>
+        <file file="${dygraphSource}/dygraph-options-reference.js"/>
+        <file file="${dygraphSource}/dygraph-plugin-base.js"/>
+        <file file="${dygraphSource}/dygraph-plugin-install.js"/>
+        <file file="${dygraphSource}/dygraph-tickers.js"/>
+        <file file="${dygraphSource}/dygraph-utils.js"/>
+        <file file="${dygraphSource}/stacktrace.js"/>
+      </resources>
+    </copy>
+    <copy todir="${dygraphDestination}/plugins" overwrite="true" verbose="true" flatten="true">
+      <fileset dir="${dygraphSource}/plugins/"/>
+    </copy>
+    <copy todir="${dygraphDestination}/rgbcolor" overwrite="true" verbose="true" flatten="true">
+      <fileset dir="${dygraphSource}/rgbcolor"/>
+    </copy>
+    <copy todir="${dygraphDestination}/strftime" overwrite="true" verbose="true" flatten="true">
+      <fileset dir="${dygraphSource}/strftime"/>
+    </copy>
+  </target>
+</project>
