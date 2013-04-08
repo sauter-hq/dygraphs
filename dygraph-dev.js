@@ -30,10 +30,10 @@
     "dygraph-tickers.js",
     "dygraph-plugin-base.js",
     "plugins/annotations.js",
-    "plugins/axes.js",
+    "plugins/sauter-inner-axes.js", // replaces the "plugins/axes.js"
     "plugins/chart-labels.js",
     "plugins/grid.js",
-    "plugins/legend.js",
+    "plugins/sauter-legendary-cursor.js", // replaces the "plugins/legend.js" 
     "plugins/range-selector.js",
     "dygraph-plugin-install.js",
     "dygraph-options-reference.js"  // Shouldn't be included in generate-combined.sh
