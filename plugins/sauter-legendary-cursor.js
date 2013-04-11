@@ -119,6 +119,9 @@ Dygraph.Plugins.Legend = (function() {
 	 * @private
 	 */
 	legend.prototype.predraw = function(e) {
+      e.dygraph.graphDiv.appendChild(this.bubble_div_);
+      e.dygraph.graphDiv.appendChild(this.date_div_);
+      e.dygraph.graphDiv.appendChild(this.crosshair_div_);
 	};
 
 	/**
