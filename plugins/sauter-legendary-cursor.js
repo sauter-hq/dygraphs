@@ -93,7 +93,7 @@ Dygraph.Plugins.Legend = (function() {
 		
 		updateBubble(this.bubble_div_, dygraph, xValue, xCanvas, points, chartWidth);
 		updateDate(this.date_div_, dygraph, xValue, xCanvas, points, chartWidth);
-		updateCrosshair(this.crosshair_div_, xCanvas, chartWidth);
+		updateCrosshair(this.crosshair_div_, xCanvas, points, chartWidth);
 	};
 
 	legend.prototype.deselect = function(e) {
@@ -119,9 +119,9 @@ Dygraph.Plugins.Legend = (function() {
 	 * @private
 	 */
 	legend.prototype.predraw = function(e) {
-      e.dygraph.graphDiv.appendChild(this.bubble_div_);
-      e.dygraph.graphDiv.appendChild(this.date_div_);
-      e.dygraph.graphDiv.appendChild(this.crosshair_div_);
+		e.dygraph.graphDiv.appendChild(this.bubble_div_);
+		e.dygraph.graphDiv.appendChild(this.date_div_);
+		e.dygraph.graphDiv.appendChild(this.crosshair_div_);
 	};
 
 	/**
@@ -137,7 +137,7 @@ Dygraph.Plugins.Legend = (function() {
 	
 	updateBubble = function(container, dygraph, xValue, xCanvas, points, chartWidth) {
 		// Decide whether to show or not.
-		if(hideCursorOutsideChart(container, xCanvas, chartWidth)){
+		if(hideCursorOutsideChart(container, xCanvas, points, chartWidth)){
 			return;
 		}
 		
@@ -160,7 +160,7 @@ Dygraph.Plugins.Legend = (function() {
 	
 	updateDate = function(container, dygraph, xValue, xCanvas, points, chartWidth) {
 		// Decide whether to show or not.
-		if(hideCursorOutsideChart(container, xCanvas, chartWidth)){
+		if(hideCursorOutsideChart(container, xCanvas, points, chartWidth)){
 			return;
 		}
 		
@@ -180,9 +180,9 @@ Dygraph.Plugins.Legend = (function() {
 		container.style.width = containerWidth + "px";
 	};
 	
-	updateCrosshair = function(container, xCanvas, chartWidth) {
+	updateCrosshair = function(container, xCanvas, points, chartWidth) {
 		// Decide whether to show or not.
-		if(hideCursorOutsideChart(container, xCanvas, chartWidth)){
+		if(hideCursorOutsideChart(container, xCanvas, points, chartWidth)){
 			return;
 		}
 		
@@ -190,9 +190,9 @@ Dygraph.Plugins.Legend = (function() {
 		container.style.display = "inline-block";
 	};
 	
-	hideCursorOutsideChart = function(container, xCanvas, chartWidth ){
+	hideCursorOutsideChart = function(container, xCanvas, points, chartWidth){
 		// Decide whether to show or not.
-		if(xCanvas < 0 || xCanvas > chartWidth){
+		if(xCanvas < 0 || xCanvas > chartWidth || isNaN(points[0].y)){
 			container.style.display = "none";
 			return true;
 		}
