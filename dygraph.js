@@ -2171,15 +2171,34 @@ Dygraph.prototype.addXTicks_ = function() {
  * Computes the range of the data series (including confidence intervals).
  * @param { [Array] } series either [ [x1, y1], [x2, y2], ... ] or
  * [ [x1, [y1, dev_low, dev_high]], [x2, [y2, dev_low, dev_high]], ...
+ * @param dateWindow optional param specifing in which date window the 
+ * extremes shall be detected.
  * @return [low, high]
  */
-Dygraph.prototype.extremeValues_ = function(series) {
+Dygraph.prototype.extremeValues_ = function(series, dateWindow) {
   var minY = null, maxY = null, j, y;
-
+  var firstIdx = 0, lastIdx = series.length;
+  
+  if(dateWindow) {
+    var idx = 0;
+    var low = dateWindow[0];
+    var high = dateWindow[1];
+    // Start from each side of the array to minimize the performance needed.
+    while(idx < series.length && series[idx][0] < low) {
+      firstIdx ++;
+      idx ++;
+    }
+    idx = series.length-1;
+    while(idx > 0 && series[idx][0] > high) {
+      lastIdx --;
+      idx --;
+    }
+  }
+  
   var bars = this.attr_("errorBars") || this.attr_("customBars");
   if (bars) {
     // With custom bars, maxY is the max of the high values.
-    for (j = 0; j < series.length; j++) {
+    for (j = firstIdx; j < lastIdx; j++) {
       y = series[j][1][0];
       if (y === null || isNaN(y)) continue;
       var low = y - series[j][1][1];
@@ -2194,7 +2213,7 @@ Dygraph.prototype.extremeValues_ = function(series) {
       }
     }
   } else {
-    for (j = 0; j < series.length; j++) {
+    for (j = firstIdx; j < lastIdx; j++) {
       y = series[j][1];
       if (y === null || isNaN(y)) continue;
       if (maxY === null || y > maxY) {
@@ -2325,7 +2344,7 @@ Dygraph.prototype.gatherDatasets_ = function(rolledSeries, dateWindow) {
       boundaryIds[i-1] = [0, series.length-1];
     }
 
-    var seriesExtremes = this.extremeValues_(series);
+    var seriesExtremes = this.extremeValues_(series, dateWindow);
 
     if (bars) {
       for (j=0; j<series.length; j++) {
