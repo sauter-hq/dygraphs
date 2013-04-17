@@ -75,7 +75,7 @@ RangeTestCase.prototype.testRangeSetOperations = function() {
 
   g.updateOptions({ valueRange: [10, NaN] });
   assertEquals([12, 18], g.xAxisRange());
-  assertEquals([10, 44.2], g.yAxisRange(0));
+  assertEquals([10, 43], g.yAxisRange(0));
 
   g.updateOptions({ valueRange: [10, 40] });
   assertEquals([12, 18], g.xAxisRange());
@@ -83,7 +83,7 @@ RangeTestCase.prototype.testRangeSetOperations = function() {
 
   g.updateOptions({ valueRange: [10, null] });
   assertEquals([12, 18], g.xAxisRange());
-  assertEquals([10, 44.2], g.yAxisRange(0));
+  assertEquals([10, 43], g.yAxisRange(0));
 
   g.updateOptions({ valueRange: [10, 40] });
   assertEquals([12, 18], g.xAxisRange());
@@ -91,7 +91,7 @@ RangeTestCase.prototype.testRangeSetOperations = function() {
 
   g.updateOptions({ valueRange: [10, undefined] });
   assertEquals([12, 18], g.xAxisRange());
-  assertEquals([10, 44.2], g.yAxisRange(0));
+  assertEquals([10, 43], g.yAxisRange(0));
 
   g.updateOptions({ valueRange: [10, 40] });
   assertEquals([12, 18], g.xAxisRange());
@@ -402,4 +402,32 @@ RangeTestCase.prototype.testZeroScroll2 = function() {
         xRangePad: 4,
         yRangePad: 4
       });
+};
+
+RangeTestCase.prototype.testAutoScale = function() {
+  var data = [
+              [-10,100],
+              [1,3],
+              [2,4],
+              [3,3],
+              [10,-100]
+          ];
+  g = new Dygraph(
+      document.getElementById("graph"),
+      data,
+      {});
+  // initially the whole range is displayed.
+  assertEquals([-100, 100], g.yAxisRange(0));
+  
+  g.updateOptions({ dateWindow : [0, 4] });
+  assertEquals([3, 4], g.yAxisRange(0));
+
+  g.updateOptions({ dateWindow : [0, 3] });
+  assertEquals([3,4], g.yAxisRange(0));
+
+  g.updateOptions({ dateWindow : [1, 4] });
+  assertEquals([3,4], g.yAxisRange(0));
+  
+  g.updateOptions({ dateWindow : [1, 3] });
+  assertEquals([3,4], g.yAxisRange(0));
 };
