@@ -273,7 +273,7 @@ rangeSelector.prototype.initInteraction_ = function() {
   var handle = null;
   var isZooming = false;
   var isPanning = false;
-  var dynamic = !this.isMobileDevice_ && !this.isUsingExcanvas_;
+  var dynamic = /*!this.isMobileDevice_ && !this.isUsingExcanvas_*/ false; //XXX:SAUTER:EBD: Set this to NOT dynamic for SAUTER usage
 
   // We cover iframes during mouse interactions. See comments in
   // dygraph-utils.js for more info on why this is a good idea.
