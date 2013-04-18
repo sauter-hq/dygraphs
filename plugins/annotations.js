@@ -62,7 +62,6 @@ annotations.prototype.didDrawChart = function(e) {
   var annotationStyle = {
     "position": "absolute",
     "fontSize": g.getOption('axisLabelFontSize') + "px",
-    "zIndex": 10,
     "overflow": "hidden"
   };
 
