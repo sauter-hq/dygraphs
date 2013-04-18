@@ -582,8 +582,8 @@ DygraphCanvasRenderer._linePlotter = function(e) {
 DygraphCanvasRenderer._errorPlotter = function(e) {
   var g = e.dygraph;
   var setName = e.setName;
-  var errorBars = g.getOption("errorBars") || g.getOption("customBars");
-  if (!errorBars) return;
+//  var errorBars = g.getOption("errorBars") || g.getOption("customBars");
+//  if (!errorBars) return;
 
   var fillGraph = g.getOption("fillGraph", setName);
   if (fillGraph) {
