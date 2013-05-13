@@ -341,6 +341,7 @@ Dygraph.DEFAULT_ATTRS = {
   // per-axis options
   axes: {
     x: {
+      drawAxis: true,
       pixelsPerLabel: 60,
       axisLabelFormatter: Dygraph.dateAxisFormatter,
       valueFormatter: Dygraph.dateString_,
@@ -349,6 +350,7 @@ Dygraph.DEFAULT_ATTRS = {
       ticker: null  // will be set in dygraph-tickers.js
     },
     y: {
+      drawAxis: true,
       pixelsPerLabel: 30,
       valueFormatter: Dygraph.numberValueFormatter,
       axisLabelFormatter: Dygraph.numberAxisLabelFormatter,

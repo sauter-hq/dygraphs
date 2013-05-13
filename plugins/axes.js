@@ -52,12 +52,12 @@ axes.prototype.activate = function(g) {
 axes.prototype.layout = function(e) {
   var g = e.dygraph;
 
-  if (g.getOption('drawYAxis')) {
+  if (g.getOptionForAxis('drawAxis','y')) {
     var w = g.getOption('yAxisLabelWidth') + 2 * g.getOption('axisTickSize');
     e.reserveSpaceLeft(w);
   }
 
-  if (g.getOption('drawXAxis')) {
+  if (g.getOptionForAxis('drawAxis','x')) {
     var h;
     // NOTE: I think this is probably broken now, since g.getOption() now
     // hits the dictionary. (That is, g.getOption('xAxisHeight') now always
@@ -71,8 +71,7 @@ axes.prototype.layout = function(e) {
   }
 
   if (g.numAxes() == 2) {
-    // TODO(danvk): introduce a 'drawAxis' per-axis property.
-    if (g.getOption('drawYAxis')) {
+    if (g.getOptionForAxis('drawAxis','y2') !== false) {
       // TODO(danvk): per-axis setting.
       var w = g.getOption('yAxisLabelWidth') + 2 * g.getOption('axisTickSize');
       e.reserveSpaceRight(w);
@@ -103,7 +102,10 @@ axes.prototype.clearChart = function(e) {
 
 axes.prototype.willDrawChart = function(e) {
   var g = e.dygraph;
-  if (!g.getOption('drawXAxis') && !g.getOption('drawYAxis')) return;
+  var drawX = g.getOptionForAxis('drawAxis','x');
+  var drawY = g.getOptionForAxis('drawAxis','y');
+  var drawY2 = g.numAxes() == 2 && g.getOptionForAxis('drawAxis','y2') !== false;
+  if (!drawX && !drawY && drawY2) return;
   
   // Round pixels to half-integer boundaries for crisper drawing.
   function halfUp(x)  { return Math.round(x) + 0.5; }
@@ -163,31 +165,27 @@ axes.prototype.willDrawChart = function(e) {
 
   var layout = g.layout_;
   var area = e.dygraph.plotter_.area;
+  var prec_axis;
 
-  if (g.getOption('drawYAxis')) {
+  if (drawY || drawY2) {
     if (layout.yticks && layout.yticks.length > 0) {
       var num_axes = g.numAxes();
       for (i = 0; i < layout.yticks.length; i++) {
         tick = layout.yticks[i];
         if (typeof(tick) == "function") return;
-        x = area.x;
-        var sgn = 1;
-        var prec_axis = 'y1';
-        if (tick[0] == 1) {  // right-side y-axis
+        if (tick[0] == 0) {  // left-side y-axis
+          if(!drawY) continue;
+          x = area.x;
+          prec_axis = 'y1';
+        } else if (tick[0] == 1) {  // right-side y-axis
+          if(!drawY2) continue;
           x = area.x + area.w;
-          sgn = -1;
           prec_axis = 'y2';
+        } else {
+          continue;
         }
         var fontSize = g.getOptionForAxis('axisLabelFontSize', prec_axis);
         y = area.y + tick[1] * area.h;
-
-        /* Tick marks are currently clipped, so don't bother drawing them.
-        context.beginPath();
-        context.moveTo(halfUp(x), halfDown(y));
-        context.lineTo(halfUp(x - sgn * this.attr_('axisTickSize')), halfDown(y));
-        context.closePath();
-        context.stroke();
-        */
 
         label = makeDiv(tick[2], 'y', num_axes == 2 ? prec_axis : null);
         var top = (y - fontSize / 2);
@@ -223,7 +221,7 @@ axes.prototype.willDrawChart = function(e) {
             fontSize / 2) + "px";
       }
     }
-
+    
     // draw a vertical line on the left to separate the chart from the labels.
     var axisX;
     if (g.getOption('drawAxesAtZero')) {
@@ -234,17 +232,18 @@ axes.prototype.willDrawChart = function(e) {
       axisX = halfUp(area.x);
     }
 
-    context.strokeStyle = g.getOptionForAxis('axisLineColor', 'y');
-    context.lineWidth = g.getOptionForAxis('axisLineWidth', 'y');
+    if (drawY) {
+      context.strokeStyle = g.getOptionForAxis('axisLineColor', 'y');
+      context.lineWidth = g.getOptionForAxis('axisLineWidth', 'y');
 
-    context.beginPath();
-    context.moveTo(axisX, halfDown(area.y));
-    context.lineTo(axisX, halfDown(area.y + area.h));
-    context.closePath();
-    context.stroke();
-
+      context.beginPath();
+      context.moveTo(axisX, halfDown(area.y));
+      context.lineTo(axisX, halfDown(area.y + area.h));
+      context.closePath();
+      context.stroke();
+    }
     // if there's a secondary y-axis, draw a vertical line for that, too.
-    if (g.numAxes() == 2) {
+    if (drawY2) {
       context.strokeStyle = g.getOptionForAxis('axisLineColor', 'y2');
       context.lineWidth = g.getOptionForAxis('axisLineWidth', 'y2');
       context.beginPath();
@@ -255,7 +254,7 @@ axes.prototype.willDrawChart = function(e) {
     }
   }
 
-  if (g.getOption('drawXAxis')) {
+  if (drawX) {
     if (layout.xticks) {
       for (i = 0; i < layout.xticks.length; i++) {
         tick = layout.xticks[i];
