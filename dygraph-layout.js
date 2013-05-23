@@ -52,6 +52,12 @@ DygraphLayout.prototype.addDataset = function(setname, set_xy) {
   this.setNames.push(setname);
 };
 
+/**
+ * Returns the box which the chart should be drawn in. This is the canvas's
+ * box, less space needed for the axis and chart labels.
+ *
+ * @return {{x: number, y: number, w: number, h: number}}
+ */
 DygraphLayout.prototype.getPlotArea = function() {
   return this.area_;
 };
@@ -211,10 +217,7 @@ DygraphLayout.prototype._evaluateLineCharts = function() {
   // on chrome+linux, they are 6 times more expensive than iterating through the
   // points and drawing the lines. The brunt of the cost comes from allocating
   // the |point| structures.
-  var boundaryIdStart = 0;
-  if (this.dygraph_.boundaryIds_.length > 0) {
-    boundaryIdStart = this.dygraph_.boundaryIds_[this.dygraph_.boundaryIds_.length-1][0]
-  }
+  var boundaryIdStart = this.dygraph_.getLeftBoundary_();
   for (var setIdx = 0; setIdx < this.datasets.length; setIdx++) {
     var dataset = this.datasets[setIdx];
     var setName = this.setNames[setIdx];
