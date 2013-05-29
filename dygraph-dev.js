@@ -34,7 +34,7 @@
     "plugins/chart-labels.js",
     "plugins/grid.js",
     "plugins/sauter-legendary-cursor.js", // replaces the "plugins/legend.js"
-    "plugins/range-selector.js",
+    "plugins/sauter-navigator.js",
     "dygraph-plugin-install.js",
     "dygraph-options-reference.js",  // Shouldn't be included in generate-combined.sh
     "sauter/datahandler/datahandler.js",
