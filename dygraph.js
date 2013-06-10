@@ -291,6 +291,7 @@ Dygraph.DEFAULT_ATTRS = {
   connectSeparatedPoints: false,
 
   stackedGraph: false,
+  stackedGraphNaNFill: 'all',
   hideOverlayOnMouseOut: true,
 
   // TODO(danvk): support 'onmouseover' and 'never', and remove synonyms.
@@ -985,8 +986,7 @@ Dygraph.prototype.createInterface_ = function() {
   var enclosing = this.maindiv_;
 
   this.graphDiv = document.createElement("div");
-  this.graphDiv.style.width = this.width_ + "px";
-  this.graphDiv.style.height = this.height_ + "px";
+
   // TODO(danvk): any other styles that are useful to set here?
   this.graphDiv.style.textAlign = 'left';  // This is a CSS "reset"
   enclosing.appendChild(this.graphDiv);
@@ -994,10 +994,8 @@ Dygraph.prototype.createInterface_ = function() {
   // Create the canvas for interactive parts of the chart.
   this.canvas_ = Dygraph.createCanvas();
   this.canvas_.style.position = "absolute";
-  this.canvas_.width = this.width_;
-  this.canvas_.height = this.height_;
-  this.canvas_.style.width = this.width_ + "px";    // for IE
-  this.canvas_.style.height = this.height_ + "px";  // for IE
+
+  this.resizeElements_();
 
   this.canvas_ctx_ = Dygraph.getContext(this.canvas_);
 
@@ -1031,8 +1029,8 @@ Dygraph.prototype.createInterface_ = function() {
     }
   };
 
-  this.addEvent(window, 'mouseout', this.mouseOutHandler_);
-  this.addEvent(this.mouseEventElement_, 'mousemove', this.mouseMoveHandler_);
+  this.addAndTrackEvent(window, 'mouseout', this.mouseOutHandler_);
+  this.addAndTrackEvent(this.mouseEventElement_, 'mousemove', this.mouseMoveHandler_);
 
   // Don't recreate and register the resize handler on subsequent calls.
   // This happens when the graph is resized.
@@ -1043,8 +1041,17 @@ Dygraph.prototype.createInterface_ = function() {
 
     // Update when the window is resized.
     // TODO(danvk): drop frames depending on complexity of the chart.
-    this.addEvent(window, 'resize', this.resizeHandler_);
+    this.addAndTrackEvent(window, 'resize', this.resizeHandler_);
   }
+};
+
+Dygraph.prototype.resizeElements_ = function() {
+  this.graphDiv.style.width = this.width_ + "px";
+  this.graphDiv.style.height = this.height_ + "px";
+  this.canvas_.width = this.width_;
+  this.canvas_.height = this.height_;
+  this.canvas_.style.width = this.width_ + "px";    // for IE
+  this.canvas_.style.height = this.height_ + "px";  // for IE
 };
 
 /**
@@ -1053,6 +1060,9 @@ Dygraph.prototype.createInterface_ = function() {
  * usage. See, e.g., the tests/perf.html example.
  */
 Dygraph.prototype.destroy = function() {
+  this.canvas_ctx_.restore();
+  this.hidden_ctx_.restore();
+
   var removeRecursive = function(node) {
     while (node.hasChildNodes()) {
       removeRecursive(node.firstChild);
@@ -1060,19 +1070,11 @@ Dygraph.prototype.destroy = function() {
     }
   };
 
-  if (this.registeredEvents_) {
-    for (var idx = 0; idx < this.registeredEvents_.length; idx++) {
-      var reg = this.registeredEvents_[idx];
-      Dygraph.removeEvent(reg.elem, reg.type, reg.fn);
-    }
-  }
-
-  this.registeredEvents_ = [];
+  this.removeTrackedEvents_();
 
   // remove mouse event handlers (This may not be necessary anymore)
   Dygraph.removeEvent(window, 'mouseout', this.mouseOutHandler_);
   Dygraph.removeEvent(this.mouseEventElement_, 'mousemove', this.mouseMoveHandler_);
-  Dygraph.removeEvent(this.mouseEventElement_, 'mouseup', this.mouseUpHandler_);
 
   // remove window handlers
   Dygraph.removeEvent(window,'resize',this.resizeHandler_);
@@ -1344,19 +1346,13 @@ Dygraph.prototype.createDragInterface_ = function() {
 
   for (var eventName in interactionModel) {
     if (!interactionModel.hasOwnProperty(eventName)) continue;
-    this.addEvent(this.mouseEventElement_, eventName,
+    this.addAndTrackEvent(this.mouseEventElement_, eventName,
         bindHandler(interactionModel[eventName]));
-  }
-
-  // unregister the handler on subsequent calls.
-  // This happens when the graph is resized.
-  if (this.mouseUpHandler_) {
-    Dygraph.removeEvent(document, 'mouseup', this.mouseUpHandler_);
   }
 
   // If the user releases the mouse button during a drag, but not over the
   // canvas, then it doesn't count as a zooming action.
-  this.mouseUpHandler_ = function(event) {
+  var mouseUpHandler = function(event) {
     if (context.isZooming || context.isPanning) {
       context.isZooming = false;
       context.dragStartX = null;
@@ -1376,7 +1372,7 @@ Dygraph.prototype.createDragInterface_ = function() {
     context.tarp.uncover();
   };
 
-  this.addEvent(document, 'mouseup', this.mouseUpHandler_);
+  this.addAndTrackEvent(document, 'mouseup', mouseUpHandler);
 };
 
 /**
@@ -1583,7 +1579,7 @@ Dygraph.prototype.resetZoom = function() {
       oldValueRanges = this.yAxisRanges();
       // TODO(danvk): this is pretty inefficient
       var packed = this.gatherDatasets_(this.rolledSeries_, null);
-      var extremes = packed[1];
+      var extremes = packed.extremes;
 
       // this has the side-effect of modifying this.axes_.
       // this doesn't make much sense in this context, but it's convenient (we
@@ -1732,7 +1728,7 @@ Dygraph.prototype.findClosestPoint = function(domX, domY) {
   var minDist = Infinity;
   var idx = -1;
   var dist, dx, dy, point, closestPoint, closestSeries;
-  for ( var setIdx = this.layout_.datasets.length - 1 ; setIdx >= 0 ; --setIdx ) {
+  for ( var setIdx = this.layout_.points.length - 1 ; setIdx >= 0 ; --setIdx ) {
     var points = this.layout_.points[setIdx];
     for (var i = 0; i < points.length; ++i) {
       var point = points[i];
@@ -1773,7 +1769,7 @@ Dygraph.prototype.findStackedPoint = function(domX, domY) {
   var boundary = this.getLeftBoundary_();
   var rowIdx = row - boundary;
   var closestPoint, closestSeries;
-  for (var setIdx = 0; setIdx < this.layout_.datasets.length; ++setIdx) {
+  for (var setIdx = 0; setIdx < this.layout_.points.length; ++setIdx) {
     var points = this.layout_.points[setIdx];
     if (rowIdx >= points.length) continue;
     var p1 = points[rowIdx];
@@ -1879,14 +1875,6 @@ Dygraph.prototype.idxToRow_ = function(setIdx, rowIdx) {
 
   var boundary = this.getLeftBoundary_();
   return boundary + rowIdx;
-  // for (var setIdx = 0; setIdx < this.layout_.datasets.length; ++setIdx) {
-  //   var set = this.layout_.datasets[setIdx];
-  //   if (idx < set.length) {
-  //     return boundary + idx;
-  //   }
-  //   idx -= set.length;
-  // }
-  // return -1;
 };
 
 Dygraph.prototype.animateSelection_ = function(direction) {
@@ -2026,15 +2014,10 @@ Dygraph.prototype.setSelection = function(row, opt_seriesName, opt_locked) {
   if (row !== false && row >= 0) {
     if (row != this.lastRow_) changed = true;
     this.lastRow_ = row;
-    for (var setIdx = 0; setIdx < this.layout_.datasets.length; ++setIdx) {
-      var set = this.layout_.datasets[setIdx];
-      if (row < set.length) {
-        var point = this.layout_.points[setIdx][row];
-
-        if (this.attr_("stackedGraph")) {
-          point = this.layout_.unstackPointAtIndex(setIdx, row);
-        }
-
+    for (var setIdx = 0; setIdx < this.layout_.points.length; ++setIdx) {
+      var points = this.layout_.points[setIdx];
+      if (row < points.length) {
+        var point = points[row];
         if (point.yval !== null) this.selPoints_.push(point);
       }
     }
@@ -2236,6 +2219,15 @@ Dygraph.prototype.predraw_ = function() {
     this.cascadeEvents_('clearChart');
     this.plotter_.clear();
   }
+
+  if(!this.is_initial_draw_) {
+    this.canvas_ctx_.restore();
+    this.hidden_ctx_.restore();
+  }
+
+  this.canvas_ctx_.save();
+  this.hidden_ctx_.save();
+
   this.plotter_ = new DygraphCanvasRenderer(this,
                                             this.hidden_,
                                             this.hidden_ctx_,
@@ -2275,6 +2267,170 @@ Dygraph.prototype.predraw_ = function() {
 };
 
 /**
+ * Point structure.
+ *
+ * xval_* and yval_* are the original unscaled data values,
+ * while x_* and y_* are scaled to the range (0.0-1.0) for plotting.
+ * yval_stacked is the cumulative Y value used for stacking graphs,
+ * and bottom/top/minus/plus are used for error bar graphs.
+ *
+ * @typedef {{
+ *     idx: number,
+ *     name: string,
+ *     x: ?number,
+ *     xval: ?number,
+ *     y_bottom: ?number,
+ *     y: ?number,
+ *     y_stacked: ?number,
+ *     y_top: ?number,
+ *     yval_minus: ?number,
+ *     yval: ?number,
+ *     yval_plus: ?number,
+ *     yval_stacked
+ * }}
+ */
+Dygraph.PointType = undefined;
+
+// TODO(bhs): these loops are a hot-spot for high-point-count charts. In fact,
+// on chrome+linux, they are 6 times more expensive than iterating through the
+// points and drawing the lines. The brunt of the cost comes from allocating
+// the |point| structures.
+/**
+ * Converts a series to a Point array.
+ *
+ * @param {Array.<Array.<(?number|Array<?number>)>} series Array where
+ *     series[row] = [x,y] or [x, [y, err]] or [x, [y, yplus, yminus]].
+ * @param {boolean} bars True if error bars or custom bars are being drawn.
+ * @param {string} setName Name of the series.
+ * @param {number} boundaryIdStart Index offset of the first point, equal to
+ *     the number of skipped points left of the date window minimum (if any).
+ * @return {Array.<Dygraph.PointType>} List of points for this series.
+ */
+Dygraph.seriesToPoints_ = function(series, bars, setName, boundaryIdStart, customData) {
+  var points = [];
+  for (var i = 0; i < series.length; ++i) {
+    var item = series[i];
+    var yraw = bars ? item[1][0] : item[1];
+    //XXX: SAUTER: add support for custom datatypes
+    var yval;
+    if (customData){
+      yval = yraw;
+    } else{
+      yval = yraw === null ? null : DygraphLayout.parseFloat_(yraw);
+    }
+    //XXX: END
+    var point = {
+      x: NaN,
+      y: NaN,
+      xval: DygraphLayout.parseFloat_(item[0]),
+      yval: yval,
+      name: setName,  // TODO(danvk): is this really necessary?
+      idx: i + boundaryIdStart
+    };
+
+    if (bars) {
+      point.y_top = NaN;
+      point.y_bottom = NaN;
+      point.yval_minus = DygraphLayout.parseFloat_(item[1][1]);
+      point.yval_plus = DygraphLayout.parseFloat_(item[1][2]);
+    }
+    points.push(point);
+  }
+  return points;
+};
+
+
+/**
+ * Calculates point stacking for stackedGraph=true.
+ *
+ * For stacking purposes, interpolate or extend neighboring data across
+ * NaN values based on stackedGraphNaNFill settings. This is for display
+ * only, the underlying data value as shown in the legend remains NaN.
+ *
+ * @param {Array.<Dygraph.PointType>} points Point array for a single series.
+ *     Updates each Point's yval_stacked property.
+ * @param {Array.<number>} cumulativeYval Accumulated top-of-graph stacked Y
+ *     values for the series seen so far. Index is the row number. Updated
+ *     based on the current series's values.
+ * @param {Array.<number>} seriesExtremes Min and max values, updated
+ *     to reflect the stacked values.
+ * @param {string} fillMethod Interpolation method, one of 'all', 'inside', or
+ *     'none'.
+ */
+Dygraph.stackPoints_ = function(
+    points, cumulativeYval, seriesExtremes, fillMethod) {
+  var lastXval = null;
+  var prevPoint = null;
+  var nextPoint = null;
+  var nextPointIdx = -1;
+
+  // Find the next stackable point starting from the given index.
+  var updateNextPoint = function(idx) {
+    // If we've previously found a non-NaN point and haven't gone past it yet,
+    // just use that.
+    if (nextPointIdx >= idx) return;
+
+    // We haven't found a non-NaN point yet or have moved past it,
+    // look towards the right to find a non-NaN point.
+    for (var j = idx; j < points.length; ++j) {
+      // Clear out a previously-found point (if any) since it's no longer
+      // valid, we shouldn't use it for interpolation anymore.
+      nextPoint = null;
+      if (!isNaN(points[j].yval) && points[j].yval !== null) {
+        nextPointIdx = j;
+        nextPoint = points[j];
+        break;
+      }
+    }
+  };
+
+  for (var i = 0; i < points.length; ++i) {
+    var point = points[i];
+    var xval = point.xval;
+    if (cumulativeYval[xval] === undefined) {
+      cumulativeYval[xval] = 0;
+    }
+
+    var actualYval = point.yval;
+    if (isNaN(actualYval) || actualYval === null) {
+      // Interpolate/extend for stacking purposes if possible.
+      updateNextPoint(i);
+      if (prevPoint && nextPoint && fillMethod != 'none') {
+        // Use linear interpolation between prevPoint and nextPoint.
+        actualYval = prevPoint.yval + (nextPoint.yval - prevPoint.yval) *
+            ((xval - prevPoint.xval) / (nextPoint.xval - prevPoint.xval));
+      } else if (prevPoint && fillMethod == 'all') {
+        actualYval = prevPoint.yval;
+      } else if (nextPoint && fillMethod == 'all') {
+        actualYval = nextPoint.yval;
+      } else {
+        actualYval = 0;
+      }
+    } else {
+      prevPoint = point;
+    }
+
+    var stackedYval = cumulativeYval[xval];
+    if (lastXval != xval) {
+      // If an x-value is repeated, we ignore the duplicates.
+      stackedYval += actualYval;
+      cumulativeYval[xval] = stackedYval;
+    }
+    lastXval = xval;
+
+    point.yval_stacked = stackedYval;
+
+    if (stackedYval > seriesExtremes[1]) {
+      seriesExtremes[1] = stackedYval;
+    }
+    if (stackedYval < seriesExtremes[0]) {
+      seriesExtremes[0] = stackedYval;
+    }
+  }
+};
+
+
+/**
  * Loop over all fields and create datasets, calculating extreme y-values for
  * each series and extreme x-indices as we go.
  *
@@ -2282,16 +2438,23 @@ Dygraph.prototype.predraw_ = function() {
  * extreme values "speculatively", i.e. without actually setting state on the
  * dygraph.
  *
- * TODO(danvk): make this more of a true function
- * @return [ datasets, seriesExtremes, boundaryIds ]
+ * @param {Array.<Array.<Array.<(number|Array<number>)>>} rolledSeries, where
+ *     rolledSeries[seriesIndex][row] = raw point, where
+ *     seriesIndex is the column number starting with 1, and
+ *     rawPoint is [x,y] or [x, [y, err]] or [x, [y, yminus, yplus]].
+ * @param {?Array.<number>} dateWindow [xmin, xmax] pair, or null.
+ * @return {{
+ *     points: Array.<Array.<Dygraph.PointType>>,
+ *     seriesExtremes: Array.<Array.<number>>,
+ *     boundaryIds: Array.<number>}}
  * @private
  */
 Dygraph.prototype.gatherDatasets_ = function(rolledSeries, dateWindow) {
   var boundaryIds = [];
-  var cumulative_y = [];  // For stacked series.
-  var datasets = [];
+  var points = [];
+  var cumulativeYval = [];  // For stacked series.
   var extremes = {};  // series name -> [low, high]
-  var i, j, k;
+  var i, k;
   var errorBars = this.attr_("errorBars");
   var customBars = this.attr_("customBars");
   var bars = errorBars || customBars;
@@ -2307,24 +2470,17 @@ Dygraph.prototype.gatherDatasets_ = function(rolledSeries, dateWindow) {
   // Loop over the fields (series).  Go from the last to the first,
   // because if they're stacked that's how we accumulate the values.
   var num_series = rolledSeries.length - 1;
+  var series;
   for (i = num_series; i >= 1; i--) {
     if (!this.visibility()[i - 1]) continue;
-
-    // Note: this copy _is_ necessary at the moment.
-    // If you remove it, it breaks zooming with error bars on.
-    // TODO(danvk): investigate further & write a test for this.
-    var series = [];
-    for (j = 0; j < rolledSeries[i].length; j++) {
-      series.push(rolledSeries[i][j]);
-    }
 
     // Prune down to the desired range, if necessary (for zooming)
     // Because there can be lines going to points outside of the visible area,
     // we actually prune to visible points, plus one on either side.
     if (dateWindow) {
+      series = rolledSeries[i];
       var low = dateWindow[0];
       var high = dateWindow[1];
-      var pruned = [];
 
       // TODO(danvk): do binary search instead of linear search.
       // TODO(danvk): pass firstIdx and lastIdx directly to the renderer.
@@ -2354,25 +2510,25 @@ Dygraph.prototype.gatherDatasets_ = function(rolledSeries, dateWindow) {
         isInvalidValue = isValueNull(series[correctedLastIdx]);
       }
 
-      boundaryIds[i-1] = [(firstIdx > 0) ? firstIdx - 1 : firstIdx, 
+      boundaryIds[i-1] = [(firstIdx > 0) ? firstIdx - 1 : firstIdx,
           (lastIdx < series.length - 1) ? lastIdx + 1 : lastIdx];
 
       if (correctedFirstIdx!==firstIdx) {
-        pruned.push(series[correctedFirstIdx]);
-      }
-      for (k = firstIdx; k <= lastIdx; k++) {
-        pruned.push(series[k]);
+        firstIdx = correctedFirstIdx;
       }
       if (correctedLastIdx !== lastIdx) {
-        pruned.push(series[correctedLastIdx]);
+        lastIdx = correctedLastIdx;
       }
-
-      series = pruned;
+      // .slice's end is exclusive, we want to include lastIdx.
+      series = series.slice(firstIdx, lastIdx + 1);
     } else {
+      series = rolledSeries[i];
       boundaryIds[i-1] = [0, series.length-1];
     }
+
+    var seriesName = this.attr_("labels")[i];
     
-    //XXX: SAUTER: add support for custom datatypes
+	//XXX: SAUTER: add support for custom datatypes
     var seriesExtremes;
     if (this.attr_("customData")){
       seriesExtremes = this.attr_("customData").getExtremeYValues(series,dateWindow,this.attr_("labels")[i]);
@@ -2381,80 +2537,20 @@ Dygraph.prototype.gatherDatasets_ = function(rolledSeries, dateWindow) {
       seriesExtremes = this.extremeValues_(series);
     //XXX: SAUTER END
 
-    //XXX: SAUTER: add support for custom datatypes
-    if (this.attr_("customData")){
-      series = this.attr_("customData").formatSeries(series);
-    }
-    else 
-    //XXX: SAUTER END 
-    if (bars) {
-      for (j=0; j<series.length; j++) {
-        series[j] = [series[j][0],
-                     series[j][1][0],
-                     series[j][1][1],
-                     series[j][1][2]];
-      }
-    } else if (this.attr_("stackedGraph")) {
-      // Need to clear last_x explicitly as javascript's locals are
-      // local to function, not to a block of statements
-      var actual_y, last_x = null;
-      for (j = 0; j < series.length; j++) {
-        // If one data set has a NaN, let all subsequent stacked
-        // sets inherit the NaN -- only start at 0 for the first set.
-        var x = series[j][0];
-        if (cumulative_y[x] === undefined) {
-          cumulative_y[x] = 0;
-        }
+    
+    var seriesPoints = Dygraph.seriesToPoints_(
+        series, bars, seriesName, boundaryIds[i-1][0], this.attr_("customData"));
 
-        actual_y = series[j][1];
-        if (actual_y === null) {
-          series[j] = [x, null];
-          continue;
-        }
-
-        if (last_x != x) {
-          cumulative_y[x] += actual_y;
-          // If an x-value is repeated, we ignore the duplicates.
-        }
-        last_x = x;
-
-        series[j] = [x, cumulative_y[x]];
-
-        if (cumulative_y[x] > seriesExtremes[1]) {
-          seriesExtremes[1] = cumulative_y[x];
-        }
-        if (cumulative_y[x] < seriesExtremes[0]) {
-          seriesExtremes[0] = cumulative_y[x];
-        }
-      }
+    if (this.attr_("stackedGraph")) {
+      Dygraph.stackPoints_(seriesPoints, cumulativeYval, seriesExtremes,
+                           this.attr_("stackedGraphNaNFill"));
     }
 
-    var seriesName = this.attr_("labels")[i];
     extremes[seriesName] = seriesExtremes;
-    datasets[i] = series;
+    points[i] = seriesPoints;
   }
 
-  // For stacked graphs, a NaN value for any point in the sum should create a
-  // clean gap in the graph. Back-propagate NaNs to all points at this X value.
-  if (this.attr_("stackedGraph")) {
-    for (k = datasets.length - 1; k >= 0; --k) {
-      // Use the first nonempty dataset to get X values.
-      if (!datasets[k]) continue;
-      for (j = 0; j < datasets[k].length; j++) {
-        var x = datasets[k][j][0];
-        if (isNaN(cumulative_y[x])) {
-          // Set all Y values to NaN at that X value.
-          for (i = datasets.length - 1; i >= 0; i--) {
-            if (!datasets[i]) continue;
-            datasets[i][j][1] = NaN;
-          }
-        }
-      }
-      break;
-    }
-  }
-
-  return [ datasets, extremes, boundaryIds ];
+  return { points: points, extremes: extremes, boundaryIds: boundaryIds };
 };
 
 /**
@@ -2476,9 +2572,9 @@ Dygraph.prototype.drawGraph_ = function() {
   this.attrs_.pointSize = 0.5 * this.attr_('highlightCircleSize');
 
   var packed = this.gatherDatasets_(this.rolledSeries_, this.dateWindow_);
-  var datasets = packed[0];
-  var extremes = packed[1];
-  this.boundaryIds_ = packed[2];
+  var points = packed.points;
+  var extremes = packed.extremes;
+  this.boundaryIds_ = packed.boundaryIds;
 
   this.setIndexByName_ = {};
   var labels = this.attr_("labels");
@@ -2486,10 +2582,10 @@ Dygraph.prototype.drawGraph_ = function() {
     this.setIndexByName_[labels[0]] = 0;
   }
   var dataIdx = 0;
-  for (var i = 1; i < datasets.length; i++) {
+  for (var i = 1; i < points.length; i++) {
     this.setIndexByName_[labels[i]] = i;
     if (!this.visibility()[i - 1]) continue;
-    this.layout_.addDataset(labels[i], datasets[i]);
+    this.layout_.addDataset(labels[i], points[i]);
     this.datasetIndex_[i] = dataIdx++;
   }
 
@@ -2501,9 +2597,8 @@ Dygraph.prototype.drawGraph_ = function() {
   // Save the X axis zoomed status as the updateOptions call will tend to set it erroneously
   var tmp_zoomed_x = this.zoomed_x_;
   // Tell PlotKit to use this new data and render itself
-  this.layout_.setDateWindow(this.dateWindow_);
   this.zoomed_x_ = tmp_zoomed_x;
-  this.layout_.evaluateWithError();
+  this.layout_.evaluate();
   this.renderGraph_(is_initial_draw);
 
   if (this.attr_("timingName")) {
@@ -2830,6 +2925,13 @@ Dygraph.prototype.computeYAxisRanges_ = function(extremes) {
  * TODO(danvk): the "missing values" bit above doesn't seem right.
  *
  * @private
+ * @param {Array.<Array.<(number|Array<Number>)>>} rawData Input data. Rectangular
+ *     grid of points, where rawData[row][0] is the X value for the row,
+ *     and rawData[row][i] is the Y data for series #i.
+ * @param {number} i Series index, starting from 1.
+ * @param {boolean} logScale True if using logarithmic Y scale.
+ * @return {Array.<Array.<(?number|Array<?number>)>} Series array, where
+ *     series[row] = [x,y] or [x, [y, err]] or [x, [y, yplus, yminus]].
  */
 Dygraph.prototype.extractSeries_ = function(rawData, i, logScale) {
   // TODO(danvk): pre-allocate series here.
@@ -2842,12 +2944,20 @@ Dygraph.prototype.extractSeries_ = function(rawData, i, logScale) {
     if (logScale) {
       // On the log scale, points less than zero do not exist.
       // This will create a gap in the chart.
-      if (point <= 0) {
+      if (errorBars || customBars) {
+        // point.length is either 2 (errorBars) or 3 (customBars)
+        for (var k = 0; k < point.length; k++) {
+          if (point[k] <= 0) {
+            point = null;
+            break;
+          }
+        }
+      } else if (point <= 0) {
         point = null;
       }
     }
     // Fix null points to fit the display type standard.
-    if(point !== null) {
+    if (point !== null) {
       series.push([x, point]);
     } else {
       series.push([x, errorBars ? [null, null] : customBars ? [null, null, null] : point]);
@@ -3615,17 +3725,9 @@ Dygraph.prototype.resize = function(width, height) {
     this.height_ = this.maindiv_.clientHeight;
   }
 
+  this.resizeElements_();
+
   if (old_width != this.width_ || old_height != this.height_) {
-    // TODO(danvk): there should be a clear() method.
-    this.maindiv_.innerHTML = "";
-    this.roller_ = null;
-    this.attrs_.labelsDiv = null;
-    this.createInterface_();
-    if (this.annotations_.length) {
-      // createInterface_ reset the layout, so we need to do this.
-      this.layout_.setAnnotations(this.annotations_);
-    }
-    this.createDragInterface_();
     this.predraw_();
   }
 

@@ -532,15 +532,15 @@ rangeSelector.prototype.initInteraction_ = function() {
   this.setDefaultOption_('panEdgeFraction', 0.0001);
 
   var dragStartEvent = window.opera ? 'mousedown' : 'dragstart';
-  this.dygraph_.addEvent(this.leftZoomHandle_, dragStartEvent, onZoomStart);
-  this.dygraph_.addEvent(this.rightZoomHandle_, dragStartEvent, onZoomStart);
+  this.dygraph_.addAndTrackEvent(this.leftZoomHandle_, dragStartEvent, onZoomStart);
+  this.dygraph_.addAndTrackEvent(this.rightZoomHandle_, dragStartEvent, onZoomStart);
 
   if (this.isUsingExcanvas_) {
-    this.dygraph_.addEvent(this.iePanOverlay_, 'mousedown', onPanStart);
+    this.dygraph_.addAndTrackEvent(this.iePanOverlay_, 'mousedown', onPanStart);
   } else {
-    this.dygraph_.addEvent(this.fgcanvas_, 'mousedown', onPanStart);
-    this.dygraph_.addEvent(this.fgcanvas_, 'mousedown', onPanStart);
-    this.dygraph_.addEvent(this.fgcanvas_, 'mousemove', onCanvasHover);
+    this.dygraph_.addAndTrackEvent(this.fgcanvas_, 'mousedown', onPanStart);
+    this.dygraph_.addAndTrackEvent(this.fgcanvas_, 'mousedown', onPanStart);
+    this.dygraph_.addAndTrackEvent(this.fgcanvas_, 'mousemove', onCanvasHover);
   }
 };
 

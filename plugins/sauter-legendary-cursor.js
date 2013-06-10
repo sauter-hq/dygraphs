@@ -93,7 +93,7 @@ Dygraph.Plugins.Legend = (function() {
 		
 		updateBubble(this.bubble_div_, dygraph, xValue, xCanvas, points, chartWidth);
 		updateDate(this.date_div_, dygraph, xValue, xCanvas, points, chartWidth);
-		updateCrosshair(this.crosshair_div_, xCanvas, points, chartWidth);
+		updateCrosshair(this.crosshair_div_, dygraph, xCanvas, points, chartWidth);
 	};
 
 	legend.prototype.deselect = function(e) {
@@ -137,7 +137,7 @@ Dygraph.Plugins.Legend = (function() {
 	
 	updateBubble = function(container, dygraph, xValue, xCanvas, points, chartWidth) {
 		// Decide whether to show or not.
-		if(hideCursorOutsideChart(container, xCanvas, points, chartWidth)){
+		if(hideCursorOutsideChart(dygraph, container, xCanvas, points, chartWidth)){
 			return;
 		}
 		
@@ -160,15 +160,15 @@ Dygraph.Plugins.Legend = (function() {
 	
 	updateDate = function(container, dygraph, xValue, xCanvas, points, chartWidth) {
 		// Decide whether to show or not.
-		if(hideCursorOutsideChart(container, xCanvas, points, chartWidth)){
+		if(hideCursorOutsideChart(dygraph, container, xCanvas, points, chartWidth)){
 			return;
 		}
 		
 		var dateHtml = generateDateHTML(dygraph, xValue, points);
 		container.innerHTML = dateHtml;
-		var containerWidth = 130;
+		var containerWidth = 150;
 		
-		var leftPosition =  xCanvas - containerWidth/2;
+		var leftPosition =  xCanvas - containerWidth / 2;
 		if(leftPosition < 0){
 			leftPosition = 0;
 		} else if(leftPosition + containerWidth > chartWidth){
@@ -180,9 +180,9 @@ Dygraph.Plugins.Legend = (function() {
 		container.style.width = containerWidth + "px";
 	};
 	
-	updateCrosshair = function(container, xCanvas, points, chartWidth) {
+	updateCrosshair = function(container, dygraph, xCanvas, points, chartWidth) {
 		// Decide whether to show or not.
-		if(hideCursorOutsideChart(container, xCanvas, points, chartWidth)){
+		if(hideCursorOutsideChart(dygraph, container, xCanvas, points, chartWidth)){
 			return;
 		}
 		
@@ -190,9 +190,10 @@ Dygraph.Plugins.Legend = (function() {
 		container.style.display = "inline-block";
 	};
 	
-	hideCursorOutsideChart = function(container, xCanvas, points, chartWidth){
+	hideCursorOutsideChart = function(g, container, xCanvas, points, chartWidth){
 		// Decide whether to show or not.
-		if(xCanvas < 0 || xCanvas > chartWidth || isNaN(points[0].y)){
+		var hideNanValues = g.getOption("hideNanValues");
+		if(xCanvas < 0 || xCanvas > chartWidth || (hideNanValues && isNaN(points[0].y))){
 			container.style.display = "none";
 			return true;
 		}
@@ -235,6 +236,9 @@ Dygraph.Plugins.Legend = (function() {
 			yOptViews[i] = g.optionsViewForAxis_('y' + (i ? 1 + i : ''));
 		}
 		var showZeros = g.getOption("labelsShowZeroValues");
+		
+		var bubblePlotter = g.getOption("bubblePlotter");
+		
 		for (i = 0; i < sel_points.length; i++) {
 			var pt = sel_points[i];
 			if (pt.yval === 0 && !showZeros)
@@ -245,15 +249,19 @@ Dygraph.Plugins.Legend = (function() {
 			var series = g.getPropertiesForSeries(pt.name);
 			var yOptView = yOptViews[series.axis - 1];
 			var fmtFunc = yOptView('valueFormatter');
-			var yval = fmtFunc(pt.yval, yOptView, pt.name, g);
-
-			// TODO(danvk): use a template string here and make it an attribute.
-			html += "<div class='dygraph-sauter-bubble-value'>"
-					+ " <span class='dygraph-sauter-bubble-value-color' style='background-color: "
-					+ series.color
-					+ ";'></span><span class='dygraph-sauter-bubble-value-text'>"
-					+ yval + "</span></div>";
+			if(bubblePlotter !== undefined && bubblePlotter !== null) {
+				html += bubblePlotter(series.color, pt, fmtFunc, yOptView, g);
+			} else { 
+				var yval = fmtFunc(pt.yval, yOptView, pt.name, g);
+				// TODO(danvk): use a template string here and make it an attribute.
+				html += "<div class='dygraph-sauter-bubble-value'>"
+						+ " <span class='dygraph-sauter-bubble-value-color' style='background-color: "
+						+ series.color
+						+ ";'></span><span class='dygraph-sauter-bubble-value-text'>"
+						+ yval + "</span></div>";
+			}
 		}
+		
 		return html;
 	};
 
@@ -294,7 +302,7 @@ Dygraph.Plugins.Legend = (function() {
 		var xvf = xOptView('valueFormatter');
 
 		html += "<span class='dygraph-sauter-date-text'>"
-			+ xvf(x, xOptView, labels[0], g)
+			+ xvf(x, xOptView, labels[0], g, sel_points[0])
 			+ "</span>";
 		
 		return html;
