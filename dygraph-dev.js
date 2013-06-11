@@ -37,6 +37,7 @@
     "plugins/sauter-navigator.js",
     "dygraph-plugin-install.js",
     "dygraph-options-reference.js",  // Shouldn't be included in generate-combined.sh
+    "sauter/sauter-plotters.js",
     "sauter/datahandler/datahandler.js",
     "sauter/datahandler/datahandler-compressed.js",
     "sauter/datahandler/datahandler-raw.js"
