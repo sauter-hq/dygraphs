@@ -193,7 +193,7 @@ Dygraph.SauterPlotter._compressedErrorPlotter = function(e) {
         newYs = null;
       }
 	  return newYs;
-  }
+  };
 
   while (iter.hasNext) {
     var point = iter.next();
