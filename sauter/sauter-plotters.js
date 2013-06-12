@@ -51,93 +51,68 @@ Dygraph.SauterPlotter._drawStyledLine = function(e,
  */
 Dygraph.SauterPlotter._drawSeries = function(e,
     iter, strokeWidth, pointSize, drawPoints, drawGapPoints, stepPlot, color) {
-
-  var prevCanvasX = null;
-  var prevCanvasY = null;
-  var nextCanvasY = null;
-  var isIsolated; // true if this point is isolated (no line segments)
-  var point; // the point being processed in the while loop
-  var pointsOnLine = []; // Array of [canvasx, canvasy] pairs.
-  var first = true; // the first cycle through the while loop
-
+  // setup graphics context
   var ctx = e.drawingContext;
   ctx.beginPath();
   ctx.strokeStyle = color;
   ctx.lineWidth = strokeWidth;
-
-  // NOTE: we break the iterator's encapsulation here for about a 25% speedup.
-  var arr = iter.array_;
-  var limit = iter.end_;
-  var predicate = iter.predicate_;
-
-  for (var i = iter.start_; i < limit; i++) {
-    point = arr[i];
-    if (predicate) {
-      while (i < limit && !predicate(arr, i)) {
-        i++;
+  
+  // init loop variables
+  var prevX = NaN;
+  var prevY = NaN;
+  var newX = NaN;
+  var newY = NaN;
+  var point; // the point being processed in the while loop
+  
+  var isNullUndefinedOrNaN = function(x) {
+    return (x === null ||
+            x === undefined ||
+            isNaN(x));
+  };
+  while (iter.hasNext) {
+    point = iter.next();
+    if (!isNaN(prevY) && isNullUndefinedOrNaN(prevY)) {
+      if(stepPlot){
+        prevX = e.dygraph.toDomXCoord(point.yval.from);
+      } else {
+        prevX = point.canvasx;
       }
-      if (i == limit) break;
-      point = arr[i];
+      prevY = point.canvasy;
+      continue;
+    }
+
+    newY = point.canvasy;
+    var isNewYNan = isNaN(newY);
+    
+    if(stepPlot || isNewYNan){
+      newX = e.dygraph.toDomXCoord(point.yval.from);
+    } else {
+      newX = point.canvasx;
     }
     
-    var canvasx = e.dygraph.toDomXCoord(point.yval.from);
-
-    if (point.canvasy === null || point.canvasy != point.canvasy) {
-      if (stepPlot && prevCanvasX !== null) {
-        // Draw a horizontal line to the start of the missing data
-        ctx.moveTo(prevCanvasX, prevCanvasY);
-        ctx.lineTo(canvasx, prevCanvasY);
-      }
-      prevCanvasX = prevCanvasY = null;
-    } else {
-      isIsolated = false;
-      if (drawGapPoints || !prevCanvasX) {
-        iter.nextIdx_ = i;
-        iter.next();
-        nextCanvasY = iter.hasNext ? iter.peek.canvasy : null;
-
-        var isNextCanvasYNullOrNaN = nextCanvasY === null ||
-            nextCanvasY != nextCanvasY;
-        isIsolated = (!prevCanvasX && isNextCanvasYNullOrNaN);
-        if (drawGapPoints) {
-          // Also consider a point to be "isolated" if it's adjacent to a
-          // null point, excluding the graph edges.
-          if ((!first && !prevCanvasX) ||
-              (iter.hasNext && isNextCanvasYNullOrNaN)) {
-            isIsolated = true;
-          }
-        }
-      }
-
-      if (prevCanvasX !== null) {
-        if (strokeWidth) {
-          if (stepPlot) {
-            ctx.moveTo(prevCanvasX, prevCanvasY);
-            ctx.lineTo(canvasx, prevCanvasY);
-          }
-
-          ctx.lineTo(canvasx, point.canvasy);
-        }
+    if (!isNaN(prevY)) {
+      if (stepPlot || isNewYNan) {
+        ctx.moveTo(prevX, prevY);
+        ctx.lineTo(newX, prevY);
       } else {
-        ctx.moveTo(canvasx, point.canvasy);
+        ctx.moveTo(prevX, prevY);
       }
-      if (drawPoints || isIsolated) {
-        pointsOnLine.push([canvasx, point.canvasy, point.idx]);
+      if(!isNewYNan){
+        ctx.lineTo(newX, newY);
       }
-      prevCanvasX = canvasx;
-      prevCanvasY = point.canvasy;
     }
-    first = false;
+    prevY = newY;
+    prevX = newX;
   }
   ctx.stroke();
-  return pointsOnLine;
+  return [];
 };
 
 /**
  * Plotter which draws the central lines for a series.
  * @private
  */
-Dygraph.SauterPlotter._linePlotter = function(e) {
+Dygraph.SauterPlotter._compressedLinePlotter = function(e) {
   var g = e.dygraph;
   var setName = e.setName;
   var strokeWidth = e.strokeWidth;
@@ -179,7 +154,7 @@ Dygraph.SauterPlotter._linePlotter = function(e) {
  * need to be drawn on top of the error bars for all series.
  * @private
  */
-Dygraph.SauterPlotter._errorPlotter = function(e) {
+Dygraph.SauterPlotter._compressedErrorPlotter = function(e) {
   var g = e.dygraph;
   var setName = e.setName;
 //  var errorBars = g.getOption("errorBars") || g.getOption("customBars");
@@ -200,10 +175,10 @@ Dygraph.SauterPlotter._errorPlotter = function(e) {
       DygraphCanvasRenderer._getIteratorPredicate(
           g.getOption("connectSeparatedPoints")));
 
-  var newYs;
 
   // setup graphics context
-  var canvasx = NaN;
+  var newYs;
+  var newX = NaN;
   var prevX = NaN;
   var prevY = NaN;
   var prevYs = [-1, -1];
@@ -222,36 +197,47 @@ Dygraph.SauterPlotter._errorPlotter = function(e) {
 
   while (iter.hasNext) {
     var point = iter.next();
-    if ((!stepPlot && isNullUndefinedOrNaN(point.y)) ||
-        (stepPlot && !isNaN(prevY) && isNullUndefinedOrNaN(prevY))) {
-      prevX = NaN;
+    if (!isNaN(prevY) && isNullUndefinedOrNaN(prevY)) {
+      if(stepPlot){
+        prevX = e.dygraph.toDomXCoord(point.yval.from);
+      } else {
+        prevX = point.canvasx;
+      }
+      prevYs = point.y;
       continue;
     }
 
-    if (stepPlot) {
+    prevY = point.y;
+    
+    if(!isNullUndefinedOrNaN(point.y)) {
       newYs = [ point.y_bottom, point.y_top ];
-      prevY = point.y;
+      newYs[0] = e.plotArea.h * newYs[0] + e.plotArea.y;
+      newYs[1] = e.plotArea.h * newYs[1] + e.plotArea.y;
     } else {
-      newYs = [ point.y_bottom, point.y_top ];
+      newYs = null;
     }
-    canvasx = e.dygraph.toDomXCoord(point.yval.from);
-    newYs[0] = e.plotArea.h * newYs[0] + e.plotArea.y;
-    newYs[1] = e.plotArea.h * newYs[1] + e.plotArea.y;
-    if (!isNaN(prevX)) {
-      if (stepPlot) {
+    
+    if(stepPlot || newYs === null){
+    	newX = e.dygraph.toDomXCoord(point.yval.from);
+    } else {
+    	newX = point.canvasx;
+    }
+    
+    if (prevYs !== null) {
+      if (stepPlot || newYs === null) {
         ctx.moveTo(prevX, prevYs[0]);
-        ctx.lineTo(canvasx, prevYs[0]);
-        ctx.lineTo(canvasx, prevYs[1]);
+        ctx.lineTo(newX, prevYs[0]);
+        ctx.lineTo(newX, prevYs[1]);
       } else {
         ctx.moveTo(prevX, prevYs[0]);
-        ctx.lineTo(canvasx, newYs[0]);
-        ctx.lineTo(canvasx, newYs[1]);
+        ctx.lineTo(newX, newYs[0]);
+        ctx.lineTo(newX, newYs[1]);
       }
       ctx.lineTo(prevX, prevYs[1]);
       ctx.closePath();
     }
     prevYs = newYs;
-    prevX = canvasx;
+    prevX = newX;
   }
   ctx.fill();
 };
