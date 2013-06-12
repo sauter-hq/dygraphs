@@ -63,20 +63,11 @@ Dygraph.SauterPlotter._drawSeries = function(e,
   var newX = NaN;
   var newY = NaN;
   var point; // the point being processed in the while loop
-  
-  var isNullUndefinedOrNaN = function(x) {
-    return (x === null ||
-            x === undefined ||
-            isNaN(x));
-  };
+
   while (iter.hasNext) {
     point = iter.next();
-    if (!isNaN(prevY) && isNullUndefinedOrNaN(prevY)) {
-      if(stepPlot){
-        prevX = e.dygraph.toDomXCoord(point.yval.from);
-      } else {
-        prevX = point.canvasx;
-      }
+    if (isNaN(prevY) || prevY === undefined || prevY === null) {
+      prevX = e.dygraph.toDomXCoord(point.yval.from);      
       prevY = point.canvasy;
       continue;
     }
@@ -90,17 +81,15 @@ Dygraph.SauterPlotter._drawSeries = function(e,
       newX = point.canvasx;
     }
     
-    if (!isNaN(prevY)) {
-      if (stepPlot || isNewYNan) {
-        ctx.moveTo(prevX, prevY);
-        ctx.lineTo(newX, prevY);
-      } else {
-        ctx.moveTo(prevX, prevY);
-      }
-      if(!isNewYNan){
-        ctx.lineTo(newX, newY);
-      }
-    }
+	if (stepPlot || isNewYNan) {
+	  ctx.moveTo(prevX, prevY);
+	  ctx.lineTo(newX, prevY);
+	} else {
+	  ctx.moveTo(prevX, prevY);
+	}
+	if(!isNewYNan){
+	  ctx.lineTo(newX, newY);
+	}
     prevY = newY;
     prevX = newX;
   }
@@ -194,28 +183,28 @@ Dygraph.SauterPlotter._compressedErrorPlotter = function(e) {
             x === undefined ||
             isNaN(x));
   };
+  
+  var getYTopBottom = function(point){
+	  if(!isNullUndefinedOrNaN(point.y)) {
+        newYs = [ point.y_bottom, point.y_top ];
+        newYs[0] = e.plotArea.h * newYs[0] + e.plotArea.y;
+        newYs[1] = e.plotArea.h * newYs[1] + e.plotArea.y;
+      } else {
+        newYs = null;
+      }
+	  return newYs;
+  }
 
   while (iter.hasNext) {
     var point = iter.next();
-    if (!isNaN(prevY) && isNullUndefinedOrNaN(prevY)) {
-      if(stepPlot){
-        prevX = e.dygraph.toDomXCoord(point.yval.from);
-      } else {
-        prevX = point.canvasx;
-      }
-      prevYs = point.y;
+    if (isNullUndefinedOrNaN(prevY)) {
+      prevX = e.dygraph.toDomXCoord(point.yval.from);
+      prevY = point.y;
+      prevYs = getYTopBottom(point);
       continue;
     }
 
-    prevY = point.y;
-    
-    if(!isNullUndefinedOrNaN(point.y)) {
-      newYs = [ point.y_bottom, point.y_top ];
-      newYs[0] = e.plotArea.h * newYs[0] + e.plotArea.y;
-      newYs[1] = e.plotArea.h * newYs[1] + e.plotArea.y;
-    } else {
-      newYs = null;
-    }
+    newYs = getYTopBottom(point);
     
     if(stepPlot || newYs === null){
     	newX = e.dygraph.toDomXCoord(point.yval.from);
@@ -236,8 +225,9 @@ Dygraph.SauterPlotter._compressedErrorPlotter = function(e) {
       ctx.lineTo(prevX, prevYs[1]);
       ctx.closePath();
     }
-    prevYs = newYs;
     prevX = newX;
+    prevY = point.y;
+    prevYs = newYs;
   }
   ctx.fill();
 };
