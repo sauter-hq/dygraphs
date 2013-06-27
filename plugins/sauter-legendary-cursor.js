@@ -23,10 +23,9 @@ Dygraph.Plugins.Legend = (function() {
      */
   var legend = function() {
     this.bubble_div_ = null;
+    this.highlight_div_ = null;
     this.date_div_ = null;
     this.crosshair_div_ = null;
-    this.highlight_div_left = null;
-    this.highlight_div_right = null;
   };
 
   legend.prototype.toString = function() {
@@ -34,7 +33,7 @@ Dygraph.Plugins.Legend = (function() {
   };
 
   // (defined below)
-  var generateBubbleHTML, generateDateHTML, updateBubble, updateDate, updateCrosshair, hideCursorOutsideChart;
+  var generateBubbleHTML, generateDateHTML, updateBubble, updateHighlight, updateDate, updateCrosshair, hideCursorOutsideChart;
 
   /**
      * This is called during the dygraph constructor, after options have been
@@ -50,10 +49,9 @@ Dygraph.Plugins.Legend = (function() {
      */
   legend.prototype.activate = function(g) {
     var bubbleDiv;
+    var highlightDiv;
     var dateDiv;
     var crosshairDiv;
-    var highlightDivLeft;
-    var highlightDivRight;
 
     var activateLegend = g.getOption("showLabelsOnHighlight");
 
@@ -64,29 +62,25 @@ Dygraph.Plugins.Legend = (function() {
     bubbleDiv = document.createElement("div");
     bubbleDiv.className = "dygraph-sauter-bubble";
 
+    highlightDiv = document.createElement("div");
+    highlightDiv.className = "dygraph-sauter-highlight";
+    
     dateDiv = document.createElement("div");
     dateDiv.className = "dygraph-sauter-date";
 
     crosshairDiv = document.createElement("div");
     crosshairDiv.className = "dygraph-sauter-crosshair";
-    
-    highlightDivLeft = document.createElement("div");
-    highlightDivLeft.className = "dygraph-sauter-highlight";
-    g.graphDiv.appendChild(highlightDivLeft);
-    highlightDivRight = document.createElement("div");
-    highlightDivRight.className = "dygraph-sauter-highlight";
-    g.graphDiv.appendChild(highlightDivRight);
 
     // TODO(danvk): come up with a cleaner way to expose this.
     g.graphDiv.appendChild(bubbleDiv);
+    g.graphDiv.insertBefore(highlightDiv, g.graphDiv.firstChild);
     g.graphDiv.appendChild(dateDiv);
     g.graphDiv.appendChild(crosshairDiv);
 
     this.bubble_div_ = bubbleDiv;
+    this.highlight_div_ = highlightDiv;
     this.date_div_ = dateDiv;
     this.crosshair_div_ = crosshairDiv;
-    this.highlight_div_left = highlightDivLeft;
-    this.highlight_div_right = highlightDivRight;
 
     return {
       select : this.select,
@@ -105,30 +99,16 @@ Dygraph.Plugins.Legend = (function() {
     var xCanvas = points[0].canvasx;
 
     updateBubble(this.bubble_div_, dygraph, xValue, xCanvas, points, chartWidth);
+    updateHighlight(this.highlight_div_, dygraph, xValue, xCanvas, points, chartWidth);
     updateDate(this.date_div_, dygraph, xValue, xCanvas, points, chartWidth);
     updateCrosshair(this.crosshair_div_, dygraph, xCanvas, points, chartWidth);
-    
-    var from = dygraph.toDomXCoord(points[0].yval.from);
-    var to = dygraph.toDomXCoord(points[0].yval.to);
-    if(!isNaN(from) && !isNaN(to)){
-    
-      this.highlight_div_left.style.left = from + "px";
-      this.highlight_div_left.style.width = (to - from) +"px";    
-      this.highlight_div_left.style.display = "inline-block";
-    
-//    this.highlight_div_left .style.left = area.x + "px";
-//    this.highlight_div_left.style.width = from +"px";
-    
-//    this.highlight_div_right.style.right = area.x + "px";
-//    this.highlight_div_right.style.width = (chartWidth - to) +"px";
-    }
   };
 
   legend.prototype.deselect = function(e) {
     this.bubble_div_.style.display = "none";
+    this.highlight_div_.style.display = "none";
     this.date_div_.style.display = "none";
     this.crosshair_div_.style.display = "none";
-    this.highlight_div_left.style.display = "none";
   };
 
   legend.prototype.didDrawChart = function(e) {
@@ -149,6 +129,7 @@ Dygraph.Plugins.Legend = (function() {
      */
   legend.prototype.predraw = function(e) {
     e.dygraph.graphDiv.appendChild(this.bubble_div_);
+    e.dygraph.graphDiv.insertBefore(this.highlight_div_, e.dygraph.graphDiv.firstChild);
     e.dygraph.graphDiv.appendChild(this.date_div_);
     e.dygraph.graphDiv.appendChild(this.crosshair_div_);
   };
@@ -159,6 +140,7 @@ Dygraph.Plugins.Legend = (function() {
      */
   legend.prototype.destroy = function() {
     this.bubble_div_ = null;
+    this.highlight_div_ = null;
     this.date_div_ = null;
     this.crosshair_div_ = null;
   };
@@ -184,6 +166,24 @@ Dygraph.Plugins.Legend = (function() {
       container.style.left = (xCanvas + 5) + "px";
     }
     container.style.display = "inline-block";
+  };
+  
+  updateHighlight = function(container, dygraph, xValue, xCanvas, points, chartWidth) {
+    var area = dygraph.plotter_.area;
+    var from = dygraph.toDomXCoord(points[0].yval.from);
+    if (from < 0){
+    	from = 0;
+    }
+    var to = dygraph.toDomXCoord(points[0].yval.to);
+    if (to > chartWidth){
+    	to = chartWidth;
+    }
+    if(!isNaN(from) && !isNaN(to)){
+	  container.style.height = area.h + "px";
+	  container.style.left = from + "px";
+	  container.style.width = (to - from) +"px";    
+	  container.style.display = "inline-block";
+    }
   };
 
   updateDate = function(container, dygraph, xValue, xCanvas, points, chartWidth) {
