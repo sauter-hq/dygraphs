@@ -69,7 +69,10 @@ Dygraph.SauterPlotter._drawSeries = function(e,
     if (isNaN(prevY) || prevY === undefined || prevY === null) {
       prevX = e.dygraph.toDomXCoord(point.yval.from);      
       prevY = point.canvasy;
+      // If the current val is NaN again, continue until it is valid
+      if (isNaN(prevY) || prevY === undefined || prevY === null) {
       continue;
+      }
     }
 
     newY = point.canvasy;
@@ -201,7 +204,10 @@ Dygraph.SauterPlotter._compressedErrorPlotter = function(e) {
       prevX = e.dygraph.toDomXCoord(point.yval.from);
       prevY = point.y;
       prevYs = getYTopBottom(point);
+      // If the current val is NaN again, continue until it is valid
+      if (isNullUndefinedOrNaN(prevY)) {
       continue;
+      }
     }
 
     newYs = getYTopBottom(point);
