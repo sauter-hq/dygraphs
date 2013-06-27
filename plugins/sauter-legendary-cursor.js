@@ -148,9 +148,9 @@ Dygraph.Plugins.Legend = (function() {
   updateBubble = function(container, dygraph, xValue, xCanvas, points,
       chartWidth) {
     // Decide whether to show or not.
-    if (hideCursorOutsideChart(dygraph, container, xCanvas, points, chartWidth)) {
-      return;
-    }
+//    if (hideCursorOutsideChart(dygraph, container, xCanvas, points, chartWidth)) {
+//      return;
+//    }
 
     var bubbleHtml = generateBubbleHTML(dygraph, xValue, points);
     if (bubbleHtml === "") {
@@ -159,11 +159,19 @@ Dygraph.Plugins.Legend = (function() {
     }
     container.innerHTML = bubbleHtml;
     if (xCanvas > (chartWidth / 2)) {
-      container.style.right = (chartWidth - xCanvas + 10) + "px";
+      var rightPos = chartWidth - xCanvas + 5;
+      if (rightPos < 0){
+        rightPos = 0 + 5;
+      }
+      container.style.right = rightPos + "px";
       container.style.left = null;
     } else {
+      var leftPos = xCanvas + 5;
+      if (leftPos < 0){
+    	  leftPos = 0 + 5;
+      }
       container.style.right = null;
-      container.style.left = (xCanvas + 5) + "px";
+      container.style.left = leftPos + "px";
     }
     container.style.display = "inline-block";
   };
@@ -188,9 +196,9 @@ Dygraph.Plugins.Legend = (function() {
 
   updateDate = function(container, dygraph, xValue, xCanvas, points, chartWidth) {
     // Decide whether to show or not.
-    if (hideCursorOutsideChart(dygraph, container, xCanvas, points, chartWidth)) {
-      return;
-    }
+//    if (hideCursorOutsideChart(dygraph, container, xCanvas, points, chartWidth)) {
+//      return;
+//    }
 
     var dateHtml = generateDateHTML(dygraph, xValue, points);
     container.innerHTML = dateHtml;
@@ -210,11 +218,18 @@ Dygraph.Plugins.Legend = (function() {
 
   updateCrosshair = function(container, dygraph, xCanvas, points, chartWidth) {
     // Decide whether to show or not.
-    if (hideCursorOutsideChart(dygraph, container, xCanvas, points, chartWidth)) {
-      return;
-    }
+//    if (hideCursorOutsideChart(dygraph, container, xCanvas, points, chartWidth)) {
+//      return;
+//    }
 
-    container.style.left = (xCanvas - 1) + "px";
+	var pos = xCanvas - 1;
+	if (pos > chartWidth){
+		pos = chartWidth;
+	} else if (pos < 0) {
+		pos = 0;
+	}
+	
+    container.style.left = pos + "px";
     container.style.display = "inline-block";
   };
 
