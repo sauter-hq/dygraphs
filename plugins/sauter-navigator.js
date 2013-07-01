@@ -438,15 +438,17 @@ rangeSelector.prototype.initInteraction_ = function() {
     var rightHandlePos = zoomHandleStatus.rightHandlePos;
     var rangeSize = rightHandlePos - leftHandlePos;
     var halfHandleWidth = self.leftZoomHandle_.width/2;
-    
+    var moveFactor = 0.9;
     if (currPos < leftHandlePos) {
-    	leftHandlePos = leftHandlePos - rangeSize;
+    	// Just move 90% of the range to increase the recognizability.
+    	leftHandlePos = leftHandlePos - rangeSize * moveFactor;
     	if (leftHandlePos < self.canvasRect_.x) {
     		leftHandlePos = self.canvasRect_.x;
     	}
     	rightHandlePos = leftHandlePos + rangeSize;
     } else if (currPos > rightHandlePos) {
-    	rightHandlePos = rightHandlePos + rangeSize;
+    	// Just move 90% of the range to increase the recognizability.
+    	rightHandlePos = rightHandlePos + rangeSize * moveFactor;
     	if (rightHandlePos > self.canvasRect_.x + self.canvasRect_.w) {
     	  rightHandlePos = self.canvasRect_.x + self.canvasRect_.w;	
     	}
