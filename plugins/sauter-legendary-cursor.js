@@ -148,9 +148,9 @@ Dygraph.Plugins.Legend = (function() {
   updateBubble = function(container, dygraph, xValue, xCanvas, points,
       chartWidth) {
     // Decide whether to show or not.
-//    if (hideCursorOutsideChart(dygraph, container, xCanvas, points, chartWidth)) {
-//      return;
-//    }
+    if (hideCursorOutsideChart(dygraph, container, xCanvas, points, chartWidth)) {
+      return;
+    }
 
     var bubbleHtml = generateBubbleHTML(dygraph, xValue, points);
     if (bubbleHtml === "") {
@@ -177,7 +177,11 @@ Dygraph.Plugins.Legend = (function() {
   };
   
   updateHighlight = function(container, dygraph, xValue, xCanvas, points, chartWidth) {
-    var area = dygraph.plotter_.area;
+	// Decide whether to show or not.
+	if (hideCursorOutsideChart(dygraph, container, xCanvas, points, chartWidth)) {
+	  return;
+	}
+	var area = dygraph.plotter_.area;
     var from = dygraph.toDomXCoord(points[0].yval.from);
     if (from < 0){
     	from = 0;
@@ -196,9 +200,9 @@ Dygraph.Plugins.Legend = (function() {
 
   updateDate = function(container, dygraph, xValue, xCanvas, points, chartWidth) {
     // Decide whether to show or not.
-//    if (hideCursorOutsideChart(dygraph, container, xCanvas, points, chartWidth)) {
-//      return;
-//    }
+    if (hideCursorOutsideChart(dygraph, container, xCanvas, points, chartWidth)) {
+      return;
+    }
 
     var dateHtml = generateDateHTML(dygraph, xValue, points);
     container.innerHTML = dateHtml;
@@ -218,9 +222,9 @@ Dygraph.Plugins.Legend = (function() {
 
   updateCrosshair = function(container, dygraph, xCanvas, points, chartWidth) {
     // Decide whether to show or not.
-//    if (hideCursorOutsideChart(dygraph, container, xCanvas, points, chartWidth)) {
-//      return;
-//    }
+    if (hideCursorOutsideChart(dygraph, container, xCanvas, points, chartWidth)) {
+      return;
+    }
 
 	var pos = xCanvas - 1;
 	if (pos > chartWidth){
@@ -236,10 +240,17 @@ Dygraph.Plugins.Legend = (function() {
   hideCursorOutsideChart = function(g, container, xCanvas, points, chartWidth) {
     // Decide whether to show or not.
     var hideNanValues = g.getOption("hideNanValues");
-    if (xCanvas < 0 || xCanvas > chartWidth
-        || (hideNanValues && isNaN(points[0].y))) {
-      container.style.display = "none";
-      return true;
+    if (hideNanValues && isNaN(points[0].y)) {
+    	container.style.display = "none";
+        return true;
+    }
+    
+    var hideCursorOutsideChart = g.getOption("hideCursorOutsideChart");
+    if(hideCursorOutsideChart){
+    	if (xCanvas < 0 || xCanvas > chartWidth) {
+    		container.style.display = "none";
+    		return true;
+    	}
     }
     return false;
   };
