@@ -1382,7 +1382,7 @@ Dygraph.prototype.createDragInterface_ = function() {
     context.tarp.uncover();
   };
 
-  this.addAndTrackEvent(document, 'mouseup', mouseUpHandler);
+//  this.addAndTrackEvent(document, 'mouseup', mouseUpHandler);
 };
 
 /**
