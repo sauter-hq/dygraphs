@@ -97,6 +97,10 @@ Dygraph.SauterPlotter._drawSeries = function(e,
     prevY = newY;
     prevX = newX;
   }
+  
+  // Draw the last part  (from the center of the last value to the end).
+  newX = e.dygraph.toDomXCoord(point.yval.to);
+  ctx.lineTo(newX, newY);
   ctx.stroke();
   return [];
 };
