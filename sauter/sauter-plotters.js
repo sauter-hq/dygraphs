@@ -240,5 +240,14 @@ Dygraph.SauterPlotter._compressedErrorPlotter = function(e) {
     prevY = point.y;
     prevYs = newYs;
   }
+  
+  //Draw the last part  (from the center of the last value to the end).
+  newX = e.dygraph.toDomXCoord(point.yval.to);
+  ctx.moveTo(prevX, prevYs[0]);
+  ctx.lineTo(newX, prevYs[0]);
+  ctx.lineTo(newX, prevYs[1]);
+  ctx.lineTo(prevX, prevYs[1]);
+  ctx.closePath();
+  
   ctx.fill();
 };
