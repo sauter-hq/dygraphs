@@ -240,9 +240,18 @@ Dygraph.Plugins.Legend = (function() {
   hideCursorOutsideChart = function(g, container, xCanvas, points, chartWidth) {
     // Decide whether to show or not.
     var hideNanValues = g.getOption("hideNanValues");
-    if (hideNanValues && isNaN(points[0].y)) {
-    	container.style.display = "none";
-        return true;
+    if (hideNanValues) {
+    	var allPointsNaN = true;
+    	for(var i=0; i<points.length; i++){
+    		if(!isNaN(points[i].y)){
+    			allPointsNaN = false;
+    			break;
+    		}
+    	}
+    	if(allPointsNaN){
+    		container.style.display = "none";
+    		return true;
+    	}
     }
     
     var hideCursorOutsideChart = g.getOption("hideCursorOutsideChart");

@@ -35,6 +35,8 @@ These too. What is the difference between axisLablelWidth and {x,y}AxisLabelWidt
 var axes = function() {
   this.xlabels_ = [];
   this.ylabels_ = [];
+  this.xHeight_ = 0;
+  this.X_AXIS_OFFSET = 8;
 };
 
 axes.prototype.toString = function() {
@@ -54,16 +56,15 @@ axes.prototype.layout = function(e) {
 
 
   if (g.getOption('drawXAxis')) {
-    var h;
     // NOTE: I think this is probably broken now, since g.getOption() now
     // hits the dictionary. (That is, g.getOption('xAxisHeight') now always
     // has a value.)
     if (g.getOption('xAxisHeight')) {
-      h = g.getOption('xAxisHeight');
+      this.xHeight_ = g.getOption('xAxisHeight');
     } else {
-      h = g.getOptionForAxis('axisLabelFontSize', 'x') + 2 * g.getOption('axisTickSize');
+    	this.xHeight_ = g.getOptionForAxis('axisLabelFontSize', 'x') + 2 * g.getOption('axisTickSize') + this.X_AXIS_OFFSET;
     }
-    e.reserveSpaceBottom(h);
+    e.reserveSpaceBottom(this.xHeight_);
   }
 
   // Don't reserve space for the yAxis since they are meant to be inside the chart
@@ -90,6 +91,11 @@ axes.prototype.detachLabels = function() {
 
 axes.prototype.clearChart = function(e) {
   this.detachLabels();
+  var area = e.dygraph.plotter_.area;
+  var context = e.dygraph.plotter_.elementContext;
+  if(context) {
+	  context.clearRect(area.x, area.y + area.w, area.w, this.xHeight_);
+  }
 };
 
 axes.prototype.willDrawChart = function(e) {
@@ -195,7 +201,7 @@ axes.prototype.willDrawChart = function(e) {
           label.style.left = "5px";
           label.style.textAlign = "left";
         } else if (tick[0] == 1) {
-          label.style.right = "10px";
+          label.style.right = "5px";
           label.style.textAlign = "right";
         }
         var ywidth = g.getOption('yAxisLabelWidth');
@@ -251,23 +257,39 @@ axes.prototype.willDrawChart = function(e) {
   }
 
   if (g.getOption('drawXAxis')) {
+    y = area.y + area.h + this.X_AXIS_OFFSET;
+    var tickSize = g.getOption('axisTickSize');
+    
+	var drawTick = function(x) {
+	  context.beginPath();
+	  context.moveTo(halfUp(x), halfDown(y));
+	  context.lineTo(halfUp(x), halfDown(y + tickSize));
+	  context.closePath();
+      context.stroke();
+    };
+    
+    context.strokeStyle = g.getOptionForAxis('axisLineColor', 'x');
+    context.lineWidth = g.getOptionForAxis('axisLineWidth', 'x');
+
+	// Draw the first and the last tick at the edges.
+	var origWidth = context.lineWidth;
+	context.lineWidth = 0.5;
+	drawTick(area.x);
+	drawTick(area.x + area.w - 1);
+	context.lineWidth = origWidth;
+	
     if (layout.xticks) {
       for (i = 0; i < layout.xticks.length; i++) {
         tick = layout.xticks[i];
         x = area.x + tick[0] * area.w;
-        y = area.y + area.h;
 
-        /* Tick marks are currently clipped, so don't bother drawing them.
-        context.beginPath();
-        context.moveTo(halfUp(x), halfDown(y));
-        context.lineTo(halfUp(x), halfDown(y + this.attr_('axisTickSize')));
-        context.closePath();
-        context.stroke();
-        */
+        // Tick marks are currently clipped, so don't bother drawing them.
+        // XXX: EBD: Deactivated the clipping in dygraphs-canvas 81-86.
+        drawTick(x);
 
         label = makeDiv(tick[1], 'x');
         label.style.textAlign = "center";
-        label.style.top = (y + g.getOption('axisTickSize')) + 'px';
+        label.style.top = (y + g.getOption('axisTickSize') + 5) + 'px';
 
         var left = (x - g.getOption('axisLabelWidth')/2);
         if (left + g.getOption('axisLabelWidth') > canvasWidth) {
@@ -285,9 +307,7 @@ axes.prototype.willDrawChart = function(e) {
         this.xlabels_.push(label);
       }
     }
-
-    context.strokeStyle = g.getOptionForAxis('axisLineColor', 'x');
-    context.lineWidth = g.getOptionForAxis('axisLineWidth', 'x');
+    
     context.beginPath();
     var axisY;
     if (g.getOption('drawAxesAtZero')) {
@@ -295,7 +315,7 @@ axes.prototype.willDrawChart = function(e) {
       if (r > 1 || r < 0) r = 1;
       axisY = halfDown(area.y + r * area.h);
     } else {
-      axisY = halfDown(area.y + area.h);
+      axisY = halfDown(y);
     }
     context.moveTo(halfUp(area.x), axisY);
     context.lineTo(halfUp(area.x + area.w), axisY);

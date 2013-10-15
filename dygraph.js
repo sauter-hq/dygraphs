@@ -1007,9 +1007,8 @@ Dygraph.prototype.createInterface_ = function() {
 
   //XXX: SAUTER: changed order of canvas_ and hidden_ and set pointerEvents style.
   // The interactive parts of the graph are drawn on top of the chart.
-  this.graphDiv.appendChild(this.canvas_);
-  this.graphDiv.appendChild(this.hidden_);
-  this.hidden_.style.pointerEvents = "none";
+    this.graphDiv.appendChild(this.canvas_);
+    this.graphDiv.appendChild(this.hidden_);
   //XXX: SAUTER END
   
   this.mouseEventElement_ = this.createMouseEventElement_();
@@ -1144,7 +1143,10 @@ Dygraph.prototype.createMouseEventElement_ = function() {
     this.graphDiv.appendChild(elem);
     return elem;
   } else {
-    return this.canvas_;
+    //XXX: SAUTER: changed order of canvas_ and hidden_ and set pointerEvents style.
+    // The interactive parts of the graph are drawn on top of the chart.
+	return this.hidden_;
+	//XXX: SAUTER END
   }
 };
 

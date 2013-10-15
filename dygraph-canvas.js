@@ -67,6 +67,11 @@ var DygraphCanvasRenderer = function(dygraph, element, elementContext, layout) {
   this.container.style.position = "relative";
   this.container.style.width = this.width + "px";
 
+  // XXX: EBD: Deactivated to allow x-axis ticks.
+  //this.clipPlotArea();
+};
+
+DygraphCanvasRenderer.prototype.clipPlotArea = function(){
   // Set up a clipping area for the canvas (and the interaction canvas).
   // This ensures that we don't overdraw.
   if (this.dygraph_.isUsingExcanvas_) {
@@ -76,17 +81,30 @@ var DygraphCanvasRenderer = function(dygraph, element, elementContext, layout) {
     // displaying anything.
     if (!Dygraph.isAndroid()) {
       var ctx = this.dygraph_.canvas_ctx_;
+      ctx.save();
       ctx.beginPath();
       ctx.rect(this.area.x, this.area.y, this.area.w, this.area.h);
       ctx.clip();
 
       ctx = this.dygraph_.hidden_ctx_;
+      ctx.save();
       ctx.beginPath();
       ctx.rect(this.area.x, this.area.y, this.area.w, this.area.h);
       ctx.clip();
     }
   }
 };
+
+DygraphCanvasRenderer.prototype.freeClipping = function(){
+  if (this.dygraph_.isUsingExcanvas_) {
+    // TODO: EBD: Don't know what to do here.
+  } else {
+    var ctx = this.dygraph_.canvas_ctx_;
+    ctx.restore();
+    ctx = this.dygraph_.hidden_ctx_;
+    ctx.restore();
+  }
+},
 
 /**
  * This just forwards to dygraph.attr_.
@@ -158,11 +176,17 @@ DygraphCanvasRenderer.isSupported = function(canvasName) {
  * @private
  */
 DygraphCanvasRenderer.prototype.render = function() {
+  // make sure that none draws outside the plot area.
+  this.clipPlotArea();
+	
   // attaches point.canvas{x,y}
   this._updatePoints();
 
   // actually draws the chart.
   this._renderLineChart();
+
+  // make the whole canvas available again.
+  this.freeClipping();
 };
 
 DygraphCanvasRenderer.prototype._createIEClipArea = function() {

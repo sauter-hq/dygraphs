@@ -35,6 +35,7 @@
     "plugins/grid.js",
     "plugins/sauter-legendary-cursor.js", // replaces the "plugins/legend.js"
     "plugins/sauter-navigator.js",
+    "plugins/sauter-constants.js",
     "dygraph-plugin-install.js",
     "dygraph-options-reference.js",  // Shouldn't be included in generate-combined.sh
     "sauter/sauter-plotters.js",

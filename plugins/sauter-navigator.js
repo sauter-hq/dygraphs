@@ -219,6 +219,7 @@ rangeSelector.prototype.createCanvases_ = function() {
   this.fgcanvas_ctx_ = Dygraph.getContext(this.fgcanvas_);
   
   this.tickmarkscanvas_ = Dygraph.createCanvas();
+  this.tickmarkscanvas_.className = 'dygraph-rangesel-tickmarkcanvas';
   this.tickmarkscanvas_.style.position = 'absolute';
   this.tickmarkscanvas_.style.zIndex = 10;
   this.tickmarkscanvas_.style.pointerEvents = "none";
@@ -265,14 +266,29 @@ rangeSelector.prototype.createZoomHandles_ = function() {
     img.style.backgroundColor = 'white';
     img.style.border = '1px solid #333333'; // Just show box in IE7.
   } else {
-    img.width = 9;
-    img.height = 16;
-    img.src = 'data:image/png;base64,' +
-'iVBORw0KGgoAAAANSUhEUgAAAAkAAAAQCAYAAADESFVDAAAAAXNSR0IArs4c6QAAAAZiS0dEANAA' +
-'zwDP4Z7KegAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAAd0SU1FB9sHGw0cMqdt1UwAAAAZdEVYdENv' +
-'bW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAaElEQVQoz+3SsRFAQBCF4Z9WJM8KCDVwownl' +
-'6YXsTmCUsyKGkZzcl7zkz3YLkypgAnreFmDEpHkIwVOMfpdi9CEEN2nGpFdwD03yEqDtOgCaun7s' +
-'qSTDH32I1pQA2Pb9sZecAxc5r3IAb21d6878xsAAAAAASUVORK5CYII=';
+	img.width = 7;
+	img.height = 30;
+	img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAcAAAAe'+
+'CAYAAADgiwSAAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2hpVFh0WE1M'+
+'OmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6'+
+'cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1w'+
+'dGs9IkFkb2JlIFhNUCBDb3JlIDUuMy1jMDExIDY2LjE0NTY2MSwgMjAxMi8wMi8wNi0xNDo1Njoy'+
+'NyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAy'+
+'LzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6'+
+'eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRw'+
+'Oi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0'+
+'dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1w'+
+'LmRpZDpGNzdGMTE3NDA3MjA2ODExODIyQUI0MjAyNjgzMjkxRSIgeG1wTU06RG9jdW1lbnRJRD0i'+
+'eG1wLmRpZDozQTU0RTVFMUNBQkUxMUUyOTZBQkUyMDE0NjE5RjgwMyIgeG1wTU06SW5zdGFuY2VJ'+
+'RD0ieG1wLmlpZDozQTU0RTVFMENBQkUxMUUyOTZBQkUyMDE0NjE5RjgwMyIgeG1wOkNyZWF0b3JU'+
+'b29sPSJBZG9iZSBQaG90b3Nob3AgQ1M2IChNYWNpbnRvc2gpIj4gPHhtcE1NOkRlcml2ZWRGcm9t'+
+'IHN0UmVmOmluc3RhbmNlSUQ9InhtcC5paWQ6Rjg3RjExNzQwNzIwNjgxMTgyMkFCNDIwMjY4MzI5'+
+'MUUiIHN0UmVmOmRvY3VtZW50SUQ9InhtcC5kaWQ6Rjc3RjExNzQwNzIwNjgxMTgyMkFCNDIwMjY4'+
+'MzI5MUUiLz4gPC9yZGY6RGVzY3JpcHRpb24+IDwvcmRmOlJERj4gPC94OnhtcG1ldGE+IDw/eHBh'+
+'Y2tldCBlbmQ9InIiPz7QKovHAAAAsElEQVR42mJgQAa56/8jc5kY8AC8koxAo7xZmZnW/f77jw0m'+
+'COT/AvKDWEASWhK8bPrSfAxMjIwM//7/Z7j49BPbtRef1zGBdBjJ8jNwsDIzsLEwgWkQHyTOBDUG'+
+'xS4Yn3zXEic5M9wAhaaHnUNLMn3lBRSa1nYCkwSKIIzPBEpp5x5/hAuAaBAfJM4CSoKglHbx6UeM'+
+'pAnm/AcmRxAGZQcYG4QJO4gRmJhBGB0ABBgAluJU+o0A6+YAAAAASUVORK5CYII=';
   }
 
   if (this.isMobileDevice_) {
@@ -540,9 +556,18 @@ rangeSelector.prototype.initInteraction_ = function() {
   if (this.isUsingExcanvas_) {
     this.dygraph_.addAndTrackEvent(this.iePanOverlay_, 'mousedown', onPanStart);
   } else {
-    this.dygraph_.addAndTrackEvent(this.fgcanvas_, 'mousedown', onPanStart);
-    this.dygraph_.addAndTrackEvent(this.fgcanvas_, 'mousedown', onPanStart);
-    this.dygraph_.addAndTrackEvent(this.fgcanvas_, 'mousemove', onCanvasHover);
+	//XXX: Register events to the tickmarkscanvas since IE doesn't support
+	// CSS3 param: pointer-events: none.
+	var eventHandler;
+	var ie = navigator.appVersion.match(/MSIE (\d\.\d)/);
+	if(ie && ie[1] < 11){
+	  eventHandler = this.tickmarkscanvas_;
+	} else {
+	  eventHandler = this.fgcanvas_;
+	}
+	this.dygraph_.addAndTrackEvent(eventHandler, 'mousedown', onPanStart);
+	this.dygraph_.addAndTrackEvent(eventHandler, 'mousedown', onPanStart);
+	this.dygraph_.addAndTrackEvent(eventHandler, 'mousemove', onCanvasHover);
   }
 };
 
@@ -629,17 +654,28 @@ rangeSelector.prototype.willDrawChart_ = function() {
 	  
   var tickmarksCtx = this.tickmarkscanvas_ctx_;
   tickmarksCtx.clearRect(0, 0, this.canvasRect_.w, this.canvasRect_.h);
-  tickmarksCtx.strokeStyle = '#989698';
+  tickmarksCtx.strokeStyle = '#000';
+  var axisTickSize = g.getOption('axisTickSize');
+  var axisLabelWidth =  g.getOption('axisLabelWidth');
+  var xAxisLabelWidth = g.getOption('xAxisLabelWidth');
   var x;
   for (var i = 0; i < xticks.length; i++) {
 	x = halfUp(xticks[i][0] * this.canvasRect_.w);
  	tickmarksCtx.beginPath();
- 	tickmarksCtx.moveTo(x, 0);
-  	tickmarksCtx.lineTo(x, 8);
+ 	tickmarksCtx.moveTo(x, halfDown(1));
+	tickmarksCtx.lineTo(x, halfDown(1 + axisTickSize));
   	tickmarksCtx.closePath();
     tickmarksCtx.stroke();
   }
 			  
+  // Draw Y-Axis Line
+  tickmarksCtx.beginPath();
+  tickmarksCtx.moveTo(0, 0);
+  tickmarksCtx.lineTo(this.canvasRect_.w, 0);
+  tickmarksCtx.closePath();
+  tickmarksCtx.stroke();
+		
+  // Draw lables
   this.datesdiv_.innerHTML = '';
   var label;
   var x;
@@ -647,10 +683,10 @@ rangeSelector.prototype.willDrawChart_ = function() {
     x = xticks[i][0] * this.canvasRect_.w;
     label = makeDiv(xticks[i][1], 'x');
     label.style.textAlign = "center";
-    label.style.top = (this.canvasRect_.h + g.getOption('axisTickSize') - 23) + 'px';
-    var left = (x - g.getOption('axisLabelWidth')/2);
-    if (left + g.getOption('axisLabelWidth') > this.canvasRect_.w) {
-      left = this.canvasRect_.w - g.getOption('xAxisLabelWidth');
+    label.style.top = (this.canvasRect_.h + axisTickSize - 23) + 'px';
+    var left = (x - axisLabelWidth/2);
+    if (left + axisLabelWidth > this.canvasRect_.w) {
+      left = this.canvasRect_.w - xAxisLabelWidth;
       label.style.textAlign = "right";
     }
     if (left < 0) {
@@ -659,7 +695,7 @@ rangeSelector.prototype.willDrawChart_ = function() {
     }
 		
     label.style.left = left + "px";
-    label.style.width = g.getOption('xAxisLabelWidth') + "px";
+    label.style.width = xAxisLabelWidth + "px";
     this.datesdiv_.appendChild(label);
   }
   this.initialized_ = true;
