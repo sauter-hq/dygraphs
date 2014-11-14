@@ -9,6 +9,9 @@
  *   http://www.w3.org/TR/DOM-Level-2-Style/css.html#CSS-RGBColor
  * so renamed to "RGBColorParser"
  *
+ * NOTE: modified by eichsjul. I added a color def for rgba values to be 
+ * able to parse them.
+ *
  * @author Stoyan Stefanov <sstoo@gmail.com>
  * @link   http://www.phpied.com/rgb-color-parser-in-javascript/
  * @license Use it if you like it
@@ -195,6 +198,18 @@ function RGBColorParser(color_string)
             }
         },
         {
+            re: /^rgba\((\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3}),\s*(0|1|(0\.[0-9]{1,2})|(1\.[0]{1,2}))(\d)\)$/,
+            example: ['rgba(123, 234, 45, 0.5)', 'rgba(255,234,245,1.0)'],
+            process: function (bits){
+                return [
+                    parseInt(bits[1]),
+                    parseInt(bits[2]),
+                    parseInt(bits[3]),
+                    parseFloat(bits[4])
+                ];
+            }
+        },
+        {
             re: /^(\w{2})(\w{2})(\w{2})$/,
             example: ['#00ff00', '336699'],
             process: function (bits){
@@ -228,6 +243,7 @@ function RGBColorParser(color_string)
             this.r = channels[0];
             this.g = channels[1];
             this.b = channels[2];
+            this.a = channels[3];
             this.ok = true;
         }
 
@@ -237,11 +253,17 @@ function RGBColorParser(color_string)
     this.r = (this.r < 0 || isNaN(this.r)) ? 0 : ((this.r > 255) ? 255 : this.r);
     this.g = (this.g < 0 || isNaN(this.g)) ? 0 : ((this.g > 255) ? 255 : this.g);
     this.b = (this.b < 0 || isNaN(this.b)) ? 0 : ((this.b > 255) ? 255 : this.b);
+    this.a = (this.a < 0 || isNaN(this.a)) ? 1 : ((this.a > 1) ? 1 : this.b);
 
     // some getters
     this.toRGB = function () {
         return 'rgb(' + this.r + ', ' + this.g + ', ' + this.b + ')';
     }
+    
+    this.toRGBA = function () {
+        return 'rgba(' + this.r + ', ' + this.g + ', ' + this.b + ',' + this.a + ')';
+    }
+    
     this.toHex = function () {
         var r = this.r.toString(16);
         var g = this.g.toString(16);
